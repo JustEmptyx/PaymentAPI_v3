@@ -1,0 +1,9 @@
+
+
+!=========================================accounts=========================================!
+
+{"data":{"account":[{"accountDescription":"ТЕСТОВЫЙ ИП 2","accountDetails":{"identification":"BY15AKBB34130000003380000000","name":"НГ Упигпрни Ргупанн Гпдалрни","schemeName":"BY.NBRB.IBAN"},"accountId":"BA2147957","accountSubType":"Savings","accountType":"Business","creationDateTime":"2024-04-18T13:47:17+03:00","currency":"BYN","debtorAgent":{"identification":"AKBBBY2X","name":"ОАО \"АСБ Беларусбанк\""},"status":"Enabled","statusUpdateDateTime":"2025-11-25T10:41:00+03:00"},{"accountDescription":"ТЕСТОВЫЙ ИП 2","accountDetails":{"identification":"BY16AKBB30130000624250000000","name":"АО Омвммрам Рдомван Омквсрам","schemeName":"BY.NBRB.IBAN"},"accountId":"BA1596803","accountSubType":"CurrentAccount","accountType":"Business","creationDateTime":"2021-09-14T08:51:37+03:00","currency":"BYN","debtorAgent":{"identification":"AKBBBY2X","name":"ОАО \"АСБ Беларусбанк\""},"status":"Enabled","statusUpdateDateTime":"2025-11-25T10:41:00+03:00"}]},"links":{"self":"https://open-banking-akbb.softclub.by/oapi-channel/open-banking/v1.0/accounts"},"meta":{"currentPage":1,"entriesPerPage":2,"maximumEntriesAllowedPerPage":10,"totalEntries":2,"totalPages":1},"risk":{}}
+
+!=========================================statements=========================================!
+
+{"data":{"statement":{"accountId":"BA2147957","fromBookingDate":"2025-11-25","statementId":"795ABSB20251125434EDB5046DC7B22380B","toBookingDate":"2025-11-25"}},"links":{"self":"https://open-banking-akbb.softclub.by/oapi-channel/open-banking/v1.0/statements/BA2147957"},"meta":{"totalPages":1},"risk":{}}
