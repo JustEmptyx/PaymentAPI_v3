@@ -38,12 +38,12 @@ const REQUESTS = {
         "paymentConsents/domestic6":{
             url:"",
             headers:{a:""},
-            body:{"data":{"initiation":{"instructionIdentification":"795SDBO20250412E5AE1D70F25F431F84DD","endToEndIdentification":"01.20250412.8bd17819bcf8d8da","localInstrument":"BY.NBRB.BISS.NORMAL","requestedExecutionDate":"2025-04-12","amount":"6.00","currency":"BYN","debtor":{"name":"ОАО \"Клиент для Open API 2 ИД 217 УНП 100218304\"","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INN100218304"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220000","streetName":"ул. Такая-то","buildingNumber":"6","room":"13","addressLine":["220000, Республика Беларусь, г. МИНСК, ул. Такая-то, д.6 кв. 13","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест","phoneNumber":"+375-17123456789","mobileNumber":"+375-29123456789","faxNumber":"+375-17123456780","emailAddress":"V087_TEST1@V087_TEST1.info"}},"debtorAccount":{"schemeName":"BY.NBRB.IBAN","identification":"BY15AKBB30121554000000000010"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"creditor":{"name":"ST-”KRYSHKOVSKAYA short“ короткое наименование","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INN101103846"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220003","streetName":"ул. Такая-то 3","buildingNumber":"8","room":"15","addressLine":["220003, Республика Беларусь, г. МИНСК, ул. Такая-то 3, д.8 кв. 15","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест","phoneNumber":"+375-17233456789","mobileNumber":"+375-29323456789","faxNumber":"+375-17233456780","emailAddress":"INI200676206@INI200676206.info"}},"creditorAccount":{"schemeName":"BY.NBRB.IBAN","identification":"BY48AEBK30121272200458000933"},"creditorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"ultimateDebtor":{"name":"Фактический плательщик","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INI192837465"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220002","streetName":"ул. Такая-то 2","buildingNumber":"7","room":"14","addressLine":["220002, Республика Беларусь, г. МИНСК, ул. Такая-то 2, д.7 кв. 14","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест","phoneNumber":"+375-17223456789","mobileNumber":"+375-29223456789","faxNumber":"+375-17223456780","emailAddress":"INI192837465@INI192837465.info"}},"ultimateCreditor":{"name":"Фактический бенефициар","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INI192837465"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220004","streetName":"ул. Такая-то 4","buildingNumber":"9","room":"16","addressLine":["220002, Республика Беларусь, г. МИНСК, ул. Такая-то 4, д.9 кв. 16","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест 4","phoneNumber":"+375-17423456789","mobileNumber":"+375-29423456789","faxNumber":"+375-17423456780","emailAddress":"INI192837465@INI192837465.info"}},"remittanceInformation":{"categoryPurposeCode":"OTHR","proprietaryPurpose":"190401.21","unstructured":"1Назначение платежа в неструктурированной виде длиной 140 символов 12Назначение платежа в неструктурированной виде длиной 140 символов 23Назначение платежа в неструктурированной виде длиной 140 символов 3","referredDocument":[]},"regulatoryReporting":[],"enclosedFile":[],"listAccounts":[],"listPassportData":[]}},"risk":{"paymentContextCode":"90401"}}
+            body:{"data":{"initiation":{"instructionIdentification":"795SDBO20250412E5AE1D70F25F431F32DD","endToEndIdentification":"01.20251224.8bd17819bcf8d6da","localInstrument":"BY.NBRB.BISS.NORMAL","requestedExecutionDate":"2025-12-25","amount":"6.00","currency":"BYN","debtor":{"name":"ОАО \"Клиент для Open API 2 ИД 217 УНП 100218304\"","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INN100218304"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220000","streetName":"ул. Такая-то","buildingNumber":"6","room":"13","addressLine":["220000, Республика Беларусь, г. МИНСК, ул. Такая-то, д.6 кв. 13","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест","phoneNumber":"+375-17123456789","mobileNumber":"+375-29123456789","faxNumber":"+375-17123456780","emailAddress":"V087_TEST1@V087_TEST1.info"}},"debtorAccount":{"schemeName":"BY.NBRB.IBAN","identification":"BY15AKBB30121554000000000010"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"creditor":{"name":"ST-”KRYSHKOVSKAYA short“ короткое наименование","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INN101103846"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220003","streetName":"ул. Такая-то 3","buildingNumber":"8","room":"15","addressLine":["220003, Республика Беларусь, г. МИНСК, ул. Такая-то 3, д.8 кв. 15","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест","phoneNumber":"+375-17233456789","mobileNumber":"+375-29323456789","faxNumber":"+375-17233456780","emailAddress":"INI200676206@INI200676206.info"}},"creditorAccount":{"schemeName":"BY.NBRB.IBAN","identification":"BY48AEBK30121272200458000933"},"creditorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"ultimateDebtor":{"name":"Фактический плательщик","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INI192837465"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220002","streetName":"ул. Такая-то 2","buildingNumber":"7","room":"14","addressLine":["220002, Республика Беларусь, г. МИНСК, ул. Такая-то 2, д.7 кв. 14","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест","phoneNumber":"+375-17223456789","mobileNumber":"+375-29223456789","faxNumber":"+375-17223456780","emailAddress":"INI192837465@INI192837465.info"}},"ultimateCreditor":{"name":"Фактический бенефициар","countryOfResidence":"BY","organisationIdentification":[{"code":"TXID","identification":"INI192837465"}],"privateIdentification":[],"postalAddress":{"country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","townName":"г. МИНСК","townLocationName":"5000000000","postCode":"220004","streetName":"ул. Такая-то 4","buildingNumber":"9","room":"16","addressLine":["220002, Республика Беларусь, г. МИНСК, ул. Такая-то 4, д.9 кв. 16","СОАТО 5000000000"]},"contactDetails":{"name":"Тестовая Тест 4","phoneNumber":"+375-17423456789","mobileNumber":"+375-29423456789","faxNumber":"+375-17423456780","emailAddress":"INI192837465@INI192837465.info"}},"remittanceInformation":{"categoryPurposeCode":"OTHR","proprietaryPurpose":"190401.21","unstructured":"1Назначение платежа в неструктурированной виде длиной 140 символов 12Назначение платежа в неструктурированной виде длиной 140 символов 23Назначение платежа в неструктурированной виде длиной 140 символов 3","referredDocument":[]},"regulatoryReporting":[],"enclosedFile":[],"listAccounts":[],"listPassportData":[]}},"risk":{"paymentContextCode":"90401"}}
         },
         "paymentConsents/domestic7":{ // физЛИЦО TEST.CLIENT-12 вся инфа
             url:"",
             headers:{a:""},
-            body:{"data":{"initiation":{"instructionIdentification":"795SDBO20240629E5AE1D70F25F431F84DD","endToEndIdentification":"01.20240629.8bd17819bcf8d8da","localInstrument":"BY.NBRB.BISS.NORMAL","requestedExecutionDate":"2024-06-29","amount":"6.00","currency":"BYN","debtor":{"name":"Митрофан Доромидонтович Белуга","countryOfResidence":"BY","organisationIdentification":[],"privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}],"postalAddress":{"country":"BY","countrySubDivision":"Минская область","districtName":"Минский район","townName":"Минск","townLocationName":"Фрунзенский","postCode":"200018","streetName":"Якубовского","buildingNumber":"1","room":"2","addressLine":["addressLine"]}},"debtorAccount":{"identification":"BY21AKBB30140012426250070000","schemeName":"BY.NBRB.IBAN"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"creditor":{"name":"Авдотья Никитишна Килька","countryOfResidence":"BY","organisationIdentification":[],"privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}],"postalAddress":{"country":"BY","countrySubDivision":"Минская область","districtName":"Минский район","townName":"Минск","townLocationName":"Фрунзенский","postCode":"200018","streetName":"Якубовского","buildingNumber":"1","room":"2","addressLine":["addressLine"]}},"creditorAccount":{"schemeName":"BY.NBRB.IBAN","identification":"BY51AKBB34144000003880070000"},"ultimateCreditor":{"name":"Авдотья Никитишна Килька","countryOfResidence":"HT","organisationIdentification":[],"privateIdentification":[{"code":"CCPT","identification":"09.20220202.BU1718BU","issuer":"Гаитянским самым главным"}],"postalAddress":{"country":"BY","countrySubDivision":"Минская область","districtName":"Минский район","townName":"Минск","townLocationName":"Фрунзенский","postCode":"200018","streetName":"Якубовского","buildingNumber":"1","room":"2","addressLine":["addressLine"]}},"remittanceInformation":{"categoryPurposeCode":"OTHR","proprietaryPurpose":"190401.21","unstructured":"1Назначение платежа в неструктурированной виде длиной 140 символов 12Назначение платежа в неструктурированной виде длиной 140 символов 23Назначение платежа в неструктурированной виде длиной 140 символов 3","referredDocument":[{"type":"BOLD","number":"111111","relatedDate":"2025-07-01","remittedAmount":"1.00","invoicer":"invoicer1"}]},"regulatoryReporting":[],"listAccounts":[],"listPassportData":[],"enclosedFile":[]},"authorisation":{"authorisationType":"Single"}},"risk":{"paymentContextCode":"90401"}}
+            body:{"data":{"initiation":{"instructionIdentification":"795SDBO20240629E5AE1D70F25F431F83DD","endToEndIdentification":"01.20241224.8bd17819bcf8d7da","localInstrument":"BY.NBRB.BISS.NORMAL","requestedExecutionDate":"2025-12-25","amount":"6.00","currency":"BYN","debtor":{"name":"Митрофан Доромидонтович Белуга","countryOfResidence":"BY","organisationIdentification":[],"privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}],"postalAddress":{"country":"BY","countrySubDivision":"Минская область","districtName":"Минский район","townName":"Минск","townLocationName":"Фрунзенский","postCode":"200018","streetName":"Якубовского","buildingNumber":"1","room":"2","addressLine":["addressLine"]}},"debtorAccount":{"identification":"BY21AKBB30140012426250070000","schemeName":"BY.NBRB.IBAN"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"creditor":{"name":"Авдотья Никитишна Килька","countryOfResidence":"BY","organisationIdentification":[],"privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}],"postalAddress":{"country":"BY","countrySubDivision":"Минская область","districtName":"Минский район","townName":"Минск","townLocationName":"Фрунзенский","postCode":"200018","streetName":"Якубовского","buildingNumber":"1","room":"2","addressLine":["addressLine"]}},"creditorAccount":{"schemeName":"BY.NBRB.IBAN","identification":"BY51AKBB34144000003880070000"},"creditorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"ultimateCreditor":{"name":"Авдотья Никитишна Килька","countryOfResidence":"HT","organisationIdentification":[],"privateIdentification":[{"code":"CCPT","identification":"09.20220202.BU1718BU","issuer":"Гаитянским самым главным"}],"postalAddress":{"country":"BY","countrySubDivision":"Минская область","districtName":"Минский район","townName":"Минск","townLocationName":"Фрунзенский","postCode":"200018","streetName":"Якубовского","buildingNumber":"1","room":"2","addressLine":["addressLine"]}},"remittanceInformation":{"categoryPurposeCode":"OTHR","proprietaryPurpose":"190401.21","unstructured":"1Назначение платежа в неструктурированной виде длиной 140 символов 12Назначение платежа в неструктурированной виде длиной 140 символов 23Назначение платежа в неструктурированной виде длиной 140 символов 3","referredDocument":[{"type":"BOLD","number":"111111","relatedDate":"2025-07-01","remittedAmount":"1.00","invoicer":"invoicer1"}]},"regulatoryReporting":[],"listAccounts":[],"listPassportData":[],"enclosedFile":[]},"authorisation":{"authorisationType":"Single"}},"risk":{"paymentContextCode":"90401"}}
         },
         "paymentConsents/domestic8":{ // физЛИЦО TEST.CLIENT-12 только creditor и creditorAccount
             url:"",
@@ -58,7 +58,7 @@ const REQUESTS = {
         "payments/domestic":{
             url:"",
             headers:"",
-            body:{"data":{"domesticConsentId":"bea5fab0-3469-46dbac7c-53bf8504b14f","initiation":{"amount":"7.00","creditor":{"countryOfResidence":"BY","name":"Имечно бенефициара","organisationIdentification":[{"code":"TXID","identification":"INI200676206"}],"postalAddress":{"addressLine":[],"country":"BY"},"privateIdentification":[]},"creditorAccount":{"identification":"BY44MMBN30124040900109330000","schemeName":"BY.NBRB.IBAN"},"creditorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"currency":"BYN","debtor":{"contactDetails":{"emailAddress":"V087_TEST1@V087_TEST1.info","faxNumber":"+375-17123456780","mobileNumber":"+375-29123456789","name":"Тестовая Тест","phoneNumber":"+375-17123456789"},"countryNameOfResidence":"Республика Беларусь","countryOfResidence":"BY","name":"ОАО \"Клиент для Open API 2 ИД 217 УНП 100218304\"","organisationIdentification":[{"code":"TXID","identification":"INN100218304"}],"postalAddress":{"addressLine":["220000, Республика Беларусь, г. МИНСК, ул. Такая-то, д.6 кв. 13","СОАТО 5000000000"],"buildingNumber":"6","country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","postCode":"220000","room":"13","streetName":"ул. Такая-то","townLocationName":"5000000000","townName":"г. МИНСК"},"privateIdentification":[]},"debtorAccount":{"identification":"BY62AKBB36049000027860000000","schemeName":"BY.NBRB.IBAN"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"enclosedFile":[],"endToEndIdentification":"01.20240701.b61ba7886c1754f3","instructionIdentification":"795SDBO20240831C2876BC9BC1A41FEA5C4","listAccounts":[],"listPassportData":[],"localInstrument":"BY.NBRB.BISS.NORMAL","regulatoryReporting":[],"remittanceInformation":{"categoryPurposeCode":"OTHR","proprietaryPurpose":"190401.21","referredDocument":[],"unstructured":"1Назначение платежа в неструктурированной виде длиной 140 символов 12Назначение платежа в неструктурированной виде длиной 140 символов 23Назначение платежа в неструктурированной виде длиной 140 символов 3"},"requestedExecutionDate":"2024-08-31"}},"risk":{"paymentContextCode":"90401"}}
+            body:{"data":{"domesticConsentId":"bea5fab0-3469-46dbac7c-53bf8504b14f","initiation":{"amount":"7.00","creditor":{"countryOfResidence":"BY","name":"Имечно бенефициара","organisationIdentification":[{"code":"TXID","identification":"INI200676206"}],"postalAddress":{"addressLine":[],"country":"BY"},"privateIdentification":[]},"creditorAccount":{"identification":"BY44MMBN30124040900109330000","schemeName":"BY.NBRB.IBAN"},"creditorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"currency":"BYN","debtor":{"contactDetails":{"emailAddress":"V087_TEST1@V087_TEST1.info","faxNumber":"+375-17123456780","mobileNumber":"+375-29123456789","name":"Тестовая Тест","phoneNumber":"+375-17123456789"},"countryNameOfResidence":"Республика Беларусь","countryOfResidence":"BY","name":"ОАО \"Клиент для Open API 2 ИД 217 УНП 100218304\"","organisationIdentification":[{"code":"TXID","identification":"INN100218304"}],"postalAddress":{"addressLine":["220000, Республика Беларусь, г. МИНСК, ул. Такая-то, д.6 кв. 13","СОАТО 5000000000"],"buildingNumber":"6","country":"BY","countrySubDivision":"МИНСК","districtName":"МИНСК","postCode":"220000","room":"13","streetName":"ул. Такая-то","townLocationName":"5000000000","townName":"г. МИНСК"},"privateIdentification":[]},"debtorAccount":{"identification":"BY62AKBB36049000027860000000","schemeName":"BY.NBRB.IBAN"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"enclosedFile":[],"endToEndIdentification":"01.20241224.b61ba7886c1751f3","instructionIdentification":"795SDBO20240831C2876BC9BC1A41FEA4C3","listAccounts":[],"listPassportData":[],"localInstrument":"BY.NBRB.BISS.NORMAL","regulatoryReporting":[],"remittanceInformation":{"categoryPurposeCode":"OTHR","proprietaryPurpose":"190401.21","referredDocument":[],"unstructured":"1Назначение платежа в неструктурированной виде длиной 140 символов 12Назначение платежа в неструктурированной виде длиной 140 символов 23Назначение платежа в неструктурированной виде длиной 140 символов 3"},"requestedExecutionDate":"2025-12-25"}},"risk":{"paymentContextCode":"90401"}}
         },
         "payments/domesticNormalBackup":{
             url:"",
@@ -87,6 +87,18 @@ const REQUESTS = {
         "DELETEpaymentConsentsDomesticDBO":{
             body:""
         },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
+            body:""
+        }
     },
     qpispAuth: {
         "paymentConsents/instant1":{
@@ -116,6 +128,18 @@ const REQUESTS = {
         "GETpayments/instant1":{
             body:""
         },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
+            body:""
+        },
         method2: {
             url: "https://api.example.com/project2/method2",
             headers: { "Custom-Header": "custom-value" },
@@ -136,6 +160,18 @@ const REQUESTS = {
         },
         "PATCHpaymentInstant/invoice3":{
             body:{"data":{"instantConsentId":"4147ab88-b1f9-426593ac-17cf2f534c78","paymentLink":[{"type":"PaymentLinkByQR","URI":"https://pay.raschet.by/#00020132480010rtpraschet10303JXN3RQJWYMX2RUHXNXT8AYQP17QB653039335802BY6304097C"}],"modification":{"modificationIdentification":"28f34989-63e9-4a18-9a79","paymentInstructionIdentification":"8f34989-63e9-4a18-9a79","paymentEndToEndIdentification":"28f34989-63e9-4a18-9a79","localInstrument":"BY.NBRB.RTP.QR","instantPaymentType":"rtp_qr","debtor":{"name":"Митрофан Доромидонтович Белуга","countryOfResidence":"BY","privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"}}},"risk":{"deliveryAddress":{"country":"BY","addressLine":[]}}}
+        },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
+            body:""
         }
     },
     pispAuthTax: {
@@ -182,6 +218,18 @@ const REQUESTS = {
             body:""
         },
         "DELETEpayments/domesticTax":{
+            body:""
+        },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
             body:""
         }
     },
@@ -233,6 +281,18 @@ const REQUESTS = {
         },
         "DELETEpayments/listAccounts":{
             body:""
+        },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
+            body:""
         }
     },
     listPassports: {
@@ -282,6 +342,18 @@ const REQUESTS = {
             body:""
         },
         "DELETEpayments/listPassports":{
+            body:""
+        },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
             body:""
         }
     },
@@ -336,6 +408,18 @@ const REQUESTS = {
         },
         "DELETEpayments/requirement":{
             body:""
+        },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
+            body:""
         }
     },
     taxRequirement: {
@@ -386,6 +470,18 @@ const REQUESTS = {
         },
         "DELETEpayments/taxRequirement":{
             body:""
+        },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
+            body:""
         }
     },
     VRP: {
@@ -435,6 +531,18 @@ const REQUESTS = {
             body:""
         },
         "DELETEpayments/VRP":{
+            body:""
+        },
+        "POSTbody":{
+            body:{}
+        },
+        "GETbody":{
+            body:""
+        },
+        "PATCHbody":{
+            body:""
+        },
+        "DELETEbody":{
             body:""
         }
     },

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PISP API Tester</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">PISP API Tester</div>
+            <div class="menu">
+                <div class="menu-section">
+                    <div class="menu-header">Navigation</div>
+                    <div class="menu-item active" data-tab="functions">
+                        <i class="icon">📋</i> Functions
+                    </div>
+                    <div class="menu-item" data-tab="config">
+                        <i class="icon">⚙️</i> Configuration
+                    </div>
+                </div>
+                <div class="menu-section function-list-container" id="function-list-container">
+                    <div class="menu-header">Available Functions</div>
+                    <div id="function-list" class="function-list">
+                        <div class="loading">Loading functions...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Functions Tab -->
+            <div id="functions-tab" class="tab-content active">
+                <div class="function-header">
+                    <h2 id="selected-function">Select a function</h2>
+                    <div class="function-actions">
+                        <button id="execute-btn" class="btn primary" disabled>
+                            <i class="icon">▶️</i> Execute
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="content-area">
+                    <!-- Request Section -->
+                    <div class="section request-section">
+                        <div class="section-header">
+                            <span>Request</span>
+                            <div class="section-actions">
+                                <button id="format-json" class="btn btn-outline" title="Format JSON (if valid)">
+                                    <i class="fas fa-indent"></i> Format JSON
+                                </button>
+                            </div>
+                        </div>
+                        <div class="editor-container">
+                            <textarea id="request-body" class="code-editor" placeholder="Request body (JSON)"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Response Section -->
+                    <div class="section response-section">
+                        <div class="section-header">
+                            <span>Response</span>
+                            <div class="status">
+                                Status: <span class="status-value" id="response-status">Ready</span>
+                            </div>
+                        </div>
+                        <div class="editor-container">
+                            <textarea id="response-body" class="code-editor" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Headers Panel -->
+                <div class="headers-panel">
+                    <div class="panel-header">
+                        <h3>Request Headers</h3>
+                    </div>
+                    <div class="headers-list" id="headers-list">
+                        <div class="header-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="x-fapi-interaction-id" checked>
+                                <span class="checkmark"></span>
+                                x-fapi-interaction-id
+                            </label>
+                        </div>
+                        <div class="header-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="x-fapi-customer-ip-address">
+                                <span class="checkmark"></span>
+                                x-fapi-customer-ip-address
+                            </label>
+                        </div>
+                        <div class="header-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="x-fapi-auth-date">
+                                <span class="checkmark"></span>
+                                x-fapi-auth-date
+                            </label>
+                        </div>
+                        <div class="header-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="x-idempotency-key">
+                                <span class="checkmark"></span>
+                                x-idempotency-key
+                            </label>
+                        </div>
+                        <div class="header-item">
+                            <label class="checkbox-container">
+                            <input type="checkbox" name="application/json" checked>
+                            <span class="checkmark"></span>
+                                Content-Type: application/json
+                            </label>
+                        </div>
+                        <div class="header-item api-key">
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="x-api-key">
+                                <span class="checkmark"></span>
+                                x-api-key
+                            </label>
+                            <input type="text" id="api-key" class="api-key-input" placeholder="API Key">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Config Tab -->
+            <div id="config-tab" class="tab-content">
+                <div class="config-container">
+                    <div class="config-header">
+                        <h2>Configuration</h2>
+                        <div class="config-actions">
+                            <button id="save-config" class="btn primary">
+                                <i class="icon">💾</i> Save Config
+                            </button>
+                            <button id="reset-config" class="btn">
+                                <i class="icon">🔄</i> Reset to Default
+                            </button>
+                        </div>
+                    </div>
+                    <div class="config-editor-container">
+                        <div class="editor-container">
+                            <textarea id="config-input" class="code-editor" placeholder="Configuration (JSON)">{}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/display/placeholder.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
