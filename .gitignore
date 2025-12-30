@@ -1,3 +1,4 @@
 .git
 node_modules
 web-interface/node_modules
+logs.txt
