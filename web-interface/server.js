@@ -28,10 +28,11 @@ const functionGroups = {
     ],
     "common": [
         "GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}",
+        'PUT /paymentConsents/createSpecialPartExternalRepresentation',
     ],
-    // Add your other groups here with their respective function names
     "domestic": [
         "POST /paymentConsents/domestic",
+        "PUT /paymentConsents/createExternalRepresentation",
         "PATCH /paymentConsents/domestic",
         "GET /paymentConsents/domestic/{domesticConsentId}",
         "DELETE /paymentConsents/domestic/{domesticConsentId}",
@@ -45,6 +46,7 @@ const functionGroups = {
     ],
     "domesticTax": [
         "POST /paymentConsents/domesticTax",
+        "PUT /paymentConsents/domesticTax/createExternalRepresentation",
         "PATCH /paymentConsents/domesticTax",
         "GET /paymentConsents/domesticTax/{domesticTaxConsentId}",
         "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}",
@@ -58,6 +60,7 @@ const functionGroups = {
     ],
     "listAccounts": [
         "POST /paymentConsents/listAccounts",
+        "PUT /paymentConsents/listAccounts/createExternalRepresentation",
         "PATCH /paymentConsents/listAccounts",
         "GET /paymentConsents/listAccounts/{listAccountsConsentId}",
         "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}",
@@ -71,6 +74,7 @@ const functionGroups = {
     ],
     "listPassports": [
         "POST /paymentConsents/listPassports",
+        "PUT /paymentConsents/listPassports/createExternalRepresentation",
         "PATCH /paymentConsents/listPassports",
         "GET /paymentConsents/listPassports/{listPassportsConsentId}",
         "DELETE /paymentConsents/listPassports/{listPassportsConsentId}",
@@ -84,6 +88,7 @@ const functionGroups = {
     ],
     "requirement": [
         "POST /paymentConsents/requirement",
+        "PUT /paymentConsents/requirement/createExternalRepresentation",
         "PATCH /paymentConsents/requirement",
         "GET /paymentConsents/requirement/{requirementConsentId}",
         "DELETE /paymentConsents/requirement/{requirementConsentId}",
@@ -97,6 +102,7 @@ const functionGroups = {
     ],
     "taxRequirement": [
         "POST /paymentConsents/taxRequirement",
+        "PUT /paymentConsents/taxRequirement/createExternalRepresentation",
         "PATCH /paymentConsents/taxRequirement",
         "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}",
         "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}",
@@ -108,7 +114,6 @@ const functionGroups = {
         "GET /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
         "DELETE /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
     ],
-    // ... other groups
 };
 
 const functionMappings = {
@@ -118,8 +123,10 @@ const functionMappings = {
     'GET OBtoken': 'createDboClientToken',
 
     'GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}':'abstractGETrequest',
+    'PUT /paymentConsents/createSpecialPartExternalRepresentation':'putConsentExternalRepresentationSpecialPart',
 
     'POST /paymentConsents/domestic': 'postDomesticConsent',
+    'PUT /paymentConsents/createExternalRepresentation' : 'putDomesticConsentExternalRepresentation',
     'PATCH /paymentConsents/domestic':'patchDomesticConsent',
     'GET /paymentConsents/domestic/{domesticConsentId}': 'abstractGETrequest',
     'DELETE /paymentConsents/domestic/{domesticConsentId}': 'abstractDELETErequest',
@@ -132,6 +139,7 @@ const functionMappings = {
     'DELETE /payments/domestic/{domesticConsentId}/PSUorPAU/{userId}': 'abstractDELETErequest',
 
     'POST /paymentConsents/domesticTax': 'postDomesticTaxConsent',
+    'PUT /paymentConsents/domesticTax/createExternalRepresentation' : 'putDomesticTaxConsentExternalRepresentation',
     "PATCH /paymentConsents/domesticTax": 'patchDomesticTaxConsent',
     "GET /paymentConsents/domesticTax/{domesticTaxConsentId}" : 'abstractGETrequest',
     "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}": 'abstractDELETErequest',
@@ -144,6 +152,7 @@ const functionMappings = {
     "DELETE /payments/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/listAccounts":'postListAccountsConsent',
+    'PUT /paymentConsents/listAccounts/createExternalRepresentation' : 'putListAccountsConsentExternalRepresentation',
     "PATCH /paymentConsents/listAccounts":'patchListAccountsConsent',
     "GET /paymentConsents/listAccounts/{listAccountsConsentId}": 'abstractGETrequest',
     "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}": 'abstractDELETErequest',
@@ -156,19 +165,21 @@ const functionMappings = {
     "DELETE /payments/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/listPassports":'postListPassportsConsent',
-    "PATCH /paymentConsents/listPassports":'patchListAccountsConsent',
+    'PUT /paymentConsents/listPassports/createExternalRepresentation' : 'putListPassportsConsentExternalRepresentation',
+    "PATCH /paymentConsents/listPassports":'patchListPassportsConsent',
     "GET /paymentConsents/listPassports/{listPassportsConsentId}": 'abstractGETrequest',
     "DELETE /paymentConsents/listPassports/{listPassportsConsentId}": 'abstractDELETErequest',
     "GET /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
-    "POST /payments/listPassports":'postListAccountsPayment',
+    "POST /payments/listPassports":'postListPassportsPayment',
     "GET /payments/listPassports/{listPassportsConsentId}": 'abstractGETrequest',
     "DELETE /payments/listPassports/{listPassportsConsentId}": 'abstractDELETErequest',
     "GET /payments/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /payments/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/requirement":'postRequirementConsent',
-    "PATCH /paymentConsents/requirement":'postRequirementConsent',
+    'PUT /paymentConsents/requirement/createExternalRepresentation' : 'putRequirementConsentExternalRepresentation',
+    "PATCH /paymentConsents/requirement":'patchRequirementConsent',
     "GET /paymentConsents/requirement/{requirementConsentId}": 'abstractGETrequest',
     "DELETE /paymentConsents/requirement/{requirementConsentId}": 'abstractDELETErequest',
     "GET /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
@@ -180,6 +191,7 @@ const functionMappings = {
     "DELETE /payments/requirement/{requirementConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/taxRequirement":'postTaxRequirementConsent',
+    "PUT /paymentConsents/taxRequirement/createExternalRepresentation": 'putTaxRequirementConsentExternalRepresentation',
     "PATCH /paymentConsents/taxRequirement":'patchTaxRequirementConsent',
     "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}": 'abstractGETrequest',
     "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}": 'abstractDELETErequest',
