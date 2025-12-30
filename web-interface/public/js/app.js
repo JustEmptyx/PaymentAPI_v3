@@ -67,11 +67,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 'domesticTax': 'Domestic Tax',
                 'listAccounts': 'List Accounts',
                 'listPassports': 'List Passports',
-                'requirements': 'Requirements',
-                'requirementsTax': 'Requirements Tax'
+                'requirement': 'Requirements',
+                'taxRequirement': 'Requirements Tax'
             };
             // Create groups in the order you want them to appear
-            const groupOrder = ['tokens', 'common', 'domestic', 'domesticTax', 'listAccounts', 'listPassports', 'requirements', 'requirementsTax'];
+            const groupOrder = ['tokens', 'common', 'domestic', 'domesticTax', 'listAccounts', 'listPassports', 'requirement', 'taxRequirement'];
 
             groupOrder.forEach(groupName => {
                 if (data.groups[groupName] && data.groups[groupName].length > 0) {
