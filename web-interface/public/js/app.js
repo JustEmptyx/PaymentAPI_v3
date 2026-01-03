@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Current state
     let currentFunction = null;
     let editors = {};
-    let appConfig = {};
 
     // Initialize CodeMirror editors
     function initEditors() {
@@ -55,7 +54,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load functions from the server
     async function loadFunctions() {
         try {
-            const response = await fetch('/api/functions');
+            const response = await fetch('/api/functions',{
+                    method: 'GET',
+                    credentials: 'include'  
+            });
             const data = await response.json();
             const functionList = document.getElementById('function-list');
             functionList.innerHTML = '';
@@ -164,7 +166,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load function context (body and headers)
     async function loadFunctionContext(funcName) {
         try {
-            const response = await fetch(`/api/context/${encodeURIComponent(funcName)}`);
+            const response = await fetch(`/api/context/${encodeURIComponent(funcName)}`,{
+                    method: 'GET',
+                    credentials: 'include'  
+            });
             const context = await response.json();
 
             // Set request body
@@ -236,7 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     body,
                     enabledHeaders,
                     apiKey: apiKeyInput.value
-                })
+                }),
+                credentials: 'include'
             });
         } catch (error) {
             console.error('Error saving function context:', error);
@@ -281,7 +287,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 requestBody: requestBody, // Send as is, let the server handle parsing
                 enabledHeaders,
                 apiKey: apiKeyInput.value
-            })
+            }),
+            credentials: 'include'
         });
         // Get the response as text first
         const responseText = await response.text();
@@ -435,13 +442,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load app config
     async function loadConfig() {
+        debugger;
         try {
-            const response = await fetch('/api/config');
+            const response = await fetch('/api/config',{
+                    method: 'GET',
+                    credentials: 'include'  
+            });
             const data = await response.json();
 
             if (data.success && data.config) {
-                appConfig = data.config;
-                editors.config.setValue(JSON.stringify(appConfig, null, 2));
+                editors.config.setValue(JSON.stringify(data.config, null, 2));
+                showNotification('Configuration loaded successfully');
             }
         } catch (error) {
             console.error('Error loading config:', error);
@@ -450,6 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Save app config
     async function saveConfig() {
+        debugger;
         try {
             const configText = editors.config.getValue();
             const newConfig = JSON.parse(configText || '{}');
@@ -459,6 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     config: newConfig
                 })
@@ -467,7 +480,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (result.success) {
-                appConfig = result.config;
                 showNotification('Configuration saved successfully');
             } else {
                 throw new Error(result.error || 'Failed to save configuration');
@@ -576,6 +588,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 xhr.send(JSON.stringify({ body, enabledHeaders }));
             }
         });
+
+        document.getElementById('showSessionBtn').addEventListener('click', showSessionInfo);
+        async function showSessionInfo() {
+            debugger;
+        try {
+        const response = await fetch('/api/session', {
+            credentials: 'include'  
+        });
+        const data = await response.json();
+        
+        const sessionInfo = document.getElementById('sessionInfo');
+        sessionInfo.style.display = 'block';
+        sessionInfo.innerHTML = `
+            <h4>Информация о сессии:</h4>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+    } catch (error) {
+        console.error('Ошибка при получении данных сессии:', error);
+        alert('Не удалось получить данные сессии');
+    }
+    }
     }
 
     // Start the application

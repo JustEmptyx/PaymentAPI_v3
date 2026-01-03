@@ -3,6 +3,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const session = require('express-session');
 
 // Import PISPauth functions
 const PISPauth = require('../PISPauthNew');
@@ -11,10 +12,22 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({origin: true,credentials: true}));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(express.json())
+app.use(session({
+    secret: 'Softclub', 
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, httpOnly:true,maxAge:24*60*60*1000,sameSite:'lax',path:'/'},name:'custom_sid' 
+}));
+app.use((req, res, next) => {
+    console.log('Session ID:', req.sessionID);
+    console.log('Session:', req.session);
+    next();
+});
+debugger;
 // Store function states and contexts
 const functionStates = {};
 const functionContexts = {};
@@ -272,39 +285,34 @@ app.post('/api/context/:functionName/result', (req, res) => {
     res.json({ success: true });
 });
 
-// Default config
-let appConfig = {
-        alg: "BELTM256",
-        typ: "JOSE",
-        url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
-        url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
-        client_id_pisp: "PISP2TEST",
-        client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
-        client_id_qpisp: "BELKARTPAY_NPC_TEST",
-        client_secret_qpisp: "aES5biV0eWVkVWUHzD36it5X2yE7DSkF",
-        client_id_tpe: "ENTERPRISESOFT",
-        client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
-        client_id_dbo:"digitalChannels",
-        client_secret_dbo:"rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
-        apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f", //V087_TEST1
-        // apikey: "ed999501-fe4e-4f18-845e-d69eab692941", //test.client-12
-        client_otp: "asb123",
-        mobile_number: "+375-255427989",
-        access_token:""
-    };
+app.get('/api/session', (req, res) => {
+    debugger;
+    res.json({
+        success: true,
+        sessionId: req.sessionID,
+        config: req.session.config || 'No config in session',
+    });
+});
 
-// Get current config
 app.get('/api/config', (req, res) => {
-    res.json({ success: true, config: appConfig });
+    if(!req.session.config){
+        req.session.config = { ...PISPauth.defaultConfig}
+    }
+    res.json({ success: true, config: req.session.config });
 });
 
 // Update config
 app.post('/api/config', (req, res) => {
+    debugger;
     try {
         const { config } = req.body;
+        console.log('Updating config for session:', req.sessionID);
+        if (!req.session.config) {
+            req.session.config = { ...PISPauth.defaultConfig };
+        }
         if (config && typeof config === 'object') {
-            appConfig = { ...appConfig, ...config };
-            res.json({ success: true, config: appConfig });
+            req.session.config = { ...req.session.config, ...config };
+            res.json({ success: true, config: req.session.config });
         } else {
             res.status(400).json({ success: false, error: 'Invalid config format' });
         }
@@ -326,6 +334,10 @@ app.get('/api/functions', (req, res) => {
 
 // Execute function
 app.post('/api/execute/:functionName', async (req, res) => {
+    debugger;
+    if (!req.session.config) {
+        req.session.config = { ...PISPauth.defaultConfig };
+    }
     const { functionName } = req.params;
     let { requestBody, enabledHeaders = [] } = req.body;
 
@@ -357,21 +369,21 @@ app.post('/api/execute/:functionName', async (req, res) => {
         // Execute the function with the parsed body
         if (req.body.apiKey) {
             if (enabledHeaders.includes('x-api-key')) {
-                appConfig.apikey = req.body.apiKey;
+                req.session.config.apikey = req.body.apiKey;
             } else if (enabledHeaders.includes('authorization')) {
-                appConfig.access_token = req.body.apiKey;
+                req.session.config.access_token = req.body.apiKey;
             }
         }
-        const result = await PISPauth[actualFunctionName](appConfig, parsedBody, enabledHeaders);
+        const result = await PISPauth[actualFunctionName](req.session.config, parsedBody, enabledHeaders);
         if (enabledHeaders.includes('x-api-key') && req.body.apiKey) {
-            appConfig.apikey = req.body.apiKey;
+            req.session.config.apikey = req.body.apiKey;
         } else if (enabledHeaders.includes('authorization') && req.body.apiKey) {
-            appConfig.access_token = req.body.apiKey;
+            req.session.config.access_token = req.body.apiKey;
         }
         // Token handling remains the same
         const tokenFunctions = ['createTokenQPISP', 'createTokenTPE', 'createTokenPISP', 'createDboClientToken'];
         if (tokenFunctions.includes(actualFunctionName) && result && result.access_token) {
-            appConfig.access_token = result.access_token;
+            req.session.config.access_token = result.access_token;
             console.log('Access token updated in config');
         }
         // Update the function context with the last result
