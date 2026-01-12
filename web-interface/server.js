@@ -5,13 +5,12 @@ const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const session = require('express-session');
 
-// Import PISPauth functions
 const PISPauth = require('../PISPauthNew');
+const defaultBodies = require('../defaultBodies');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors({origin: true,credentials: true}));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -28,7 +27,6 @@ app.use((req, res, next) => {
     next();
 });
 debugger;
-// Store function states and contexts
 const functionStates = {};
 const functionContexts = {};
 
@@ -217,25 +215,33 @@ const functionMappings = {
     "DELETE /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 };
 
-// Get list of available functions
-// app.get('/api/functions', (req, res) => {
-//     const functions = Object.keys(functionMappings);
-//     res.json({ functions });
-// });
 
 app.get('/api/functions', (req, res) => {
-    // Create a copy of functionGroups with function details
     const response = {};
     for (const [groupName, functionNames] of Object.entries(functionGroups)) {
         response[groupName] = functionNames.map(name => ({
             name: name,
-            // Include any additional function metadata here
         }));
     }
     res.json({ groups: response });
 });
 
-// Get function context
+app.get('/api/defaultBody/:functionName', (req, res) => {
+    const { functionName } = req.params;
+    const defaultBody = defaultBodies[functionName];
+    if (defaultBody !== undefined) {
+        res.json({ 
+            success: true, 
+            body: defaultBody 
+        });
+    } else {
+        res.json({ 
+            success: false, 
+            body: null 
+        });
+    }
+});
+
 app.get('/api/context/:functionName', (req, res) => {
     const { functionName } = req.params;
     res.json(functionContexts[functionName] || {
@@ -245,7 +251,6 @@ app.get('/api/context/:functionName', (req, res) => {
     });
 });
 
-// Update function context
 app.post('/api/context/:functionName', (req, res) => {
     const { functionName } = req.params;
     const { body, enabledHeaders } = req.body;
@@ -268,7 +273,6 @@ app.post('/api/context/:functionName', (req, res) => {
     res.json({ success: true });
 });
 
-// Update function result
 app.post('/api/context/:functionName/result', (req, res) => {
     const { functionName } = req.params;
     const { result } = req.body;
@@ -301,7 +305,6 @@ app.get('/api/config', (req, res) => {
     res.json({ success: true, config: req.session.config });
 });
 
-// Update config
 app.post('/api/config', (req, res) => {
     debugger;
     try {
@@ -324,7 +327,6 @@ app.post('/api/config', (req, res) => {
     }
 });
 
-// Get available functions
 app.get('/api/functions', (req, res) => {
     const functions = Object.getOwnPropertyNames(PISPauth)
         .filter(name => typeof PISPauth[name] === 'function' && name !== 'main1')
@@ -332,7 +334,6 @@ app.get('/api/functions', (req, res) => {
     res.json({ functions });
 });
 
-// Execute function
 app.post('/api/execute/:functionName', async (req, res) => {
     debugger;
     if (!req.session.config) {
@@ -349,24 +350,24 @@ app.post('/api/execute/:functionName', async (req, res) => {
                 error: 'Function not found'
             });
         }
-        // Handle the request body properly
+        
         let parsedBody;
         if (typeof requestBody === 'string') {
             try {
-                // First try to parse it as JSON
+                
                 parsedBody = JSON.parse(requestBody);
             } catch (e) {
-                // If it's not valid JSON, keep it as is
+                
                 parsedBody = requestBody;
             }
         } else if (typeof requestBody === 'object' && requestBody !== null) {
-            // If it's already an object, use it directly
+            
             parsedBody = requestBody;
         } else {
-            // Fallback to empty object
+            
             parsedBody = {};
         }
-        // Execute the function with the parsed body
+        
         if (req.body.apiKey) {
             if (enabledHeaders.includes('x-api-key')) {
                 req.session.config.apikey = req.body.apiKey;
@@ -380,19 +381,16 @@ app.post('/api/execute/:functionName', async (req, res) => {
         } else if (enabledHeaders.includes('authorization') && req.body.apiKey) {
             req.session.config.access_token = req.body.apiKey;
         }
-        // Token handling remains the same
         const tokenFunctions = ['createTokenQPISP', 'createTokenTPE', 'createTokenPISP', 'createDboClientToken'];
         if (tokenFunctions.includes(actualFunctionName) && result && result.access_token) {
             req.session.config.access_token = result.access_token;
             console.log('Access token updated in config');
         }
-        // Update the function context with the last result
         if (!functionContexts[functionName]) {
             functionContexts[functionName] = {};
         }
         functionContexts[functionName].lastResult = result;
 
-        // Return the result
         res.json({
             success: true,
             data: result
@@ -407,12 +405,11 @@ app.post('/api/execute/:functionName', async (req, res) => {
     }
 });
 
-// Serve the main HTML file
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });

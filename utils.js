@@ -11,7 +11,7 @@ function sortObjectAlphabetically(obj) {
             const valueA = a[keyA];
             const valueB = b[keyB];
 
-            // Приводим значения к строкам для сравнения
+            
             const strA = typeof valueA === 'string' ? valueA : String(valueA);
             const strB = typeof valueB === 'string' ? valueB : String(valueB);
 
