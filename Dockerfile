@@ -1,16 +1,29 @@
-# Use Node.js LTS
-FROM node:18-alpine
-# Create app directory
+####### ===== Build stage =====
+FROM node:18-alpine AS build
+
 WORKDIR /usr/src/app
-# Copy package files
+
+###### Копируем package-файлы отдельно (для кеша)
 COPY package*.json ./
 COPY web-interface/package*.json ./web-interface/
-# Install dependencies
-RUN npm install
-RUN cd web-interface && npm install
-# Copy source files
+
+##### Устанавливаем зависимости
+RUN npm install --production
+RUN cd web-interface && npm install --production
+
+##### Копируем исходники
 COPY . .
-# Expose the port the app runs on
+
+##### ===== Runtime stage =====
+FROM node:18-alpine
+
+WORKDIR /usr/src/app
+
+##### Копируем только результат сборки
+COPY --from=build /usr/src/app /usr/src/app
+
+ENV NODE_ENV=production
+
 EXPOSE 3000
-# Command to run the application
-CMD [ "node", "web-interface/server.js" ]
+
+CMD ["node", "web-interface/server.js"]

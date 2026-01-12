@@ -1,13 +1,11 @@
 version: '3.8'
+
 services:
   payment-api:
-    build: .
+    image: paymentapi_v3:latest
+    container_name: paymentapi_v3
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-      - /usr/src/app/web-interface/node_modules
+      NODE_ENV: production
     restart: unless-stopped
