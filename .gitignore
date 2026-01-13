@@ -2,3 +2,6 @@
 node_modules
 web-interface/node_modules
 logs.txt
+docker-compose.yml
+logs.txt
+PAv3.tar
