@@ -12,7 +12,8 @@ class UnixDate{
     }
 
     getDateNsecondsAgo(n){
-        return this.unixTimestamp  - n
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        return currentTimestamp  - n
     }
 
     getFormattedDate(unixTime) {
