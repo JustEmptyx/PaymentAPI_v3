@@ -253,12 +253,13 @@ app.get('/api/context/:functionName', (req, res) => {
 
 app.post('/api/context/:functionName', (req, res) => {
     const { functionName } = req.params;
-    const { body, enabledHeaders } = req.body;
+    const { body, enabledHeaders, apiKey, lastResult } = req.body;
 
     if (!functionContexts[functionName]) {
         functionContexts[functionName] = {
             body: '{}',
             enabledHeaders: [],
+            apiKey: null,
             lastResult: null
         };
     }
@@ -268,6 +269,14 @@ app.post('/api/context/:functionName', (req, res) => {
 
     if (enabledHeaders !== undefined) {
         functionContexts[functionName].enabledHeaders = enabledHeaders;
+    }
+
+    if (apiKey !== undefined) {
+        functionContexts[functionName].apiKey = apiKey;
+    }
+
+    if (lastResult !== undefined) {
+        functionContexts[functionName].lastResult = lastResult;
     }
 
     res.json({ success: true });

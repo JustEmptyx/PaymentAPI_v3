@@ -222,7 +222,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             
-            editors.response.setValue('');
+            if (context.lastResult) {
+                try {
+                    const formattedResult = typeof context.lastResult === 'string'
+                        ? context.lastResult
+                        : JSON.stringify(context.lastResult, null, 2);
+                    editors.response.setValue(formattedResult);
+                } catch (e) {
+                    editors.response.setValue('Error formatting response');
+                }
+            } else {
+                editors.response.setValue('');
+            }
 
         } catch (error) {
             console.error('Error loading function context:', error);
@@ -247,6 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const body = editors.request.getValue();
             const enabledHeaders = Array.from(document.querySelectorAll('#headers-list input[type="checkbox"]:checked'))
                 .map(checkbox => checkbox.name);
+            
+            const responseText = editors.response.getValue();
 
             
             const apiKeyCheckbox = document.querySelector('input[name="x-api-key"]');
@@ -264,7 +277,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     body,
                     enabledHeaders,
-                    apiKey: apiKeyInput.value
+                    apiKey: apiKeyInput.value,
+                    lastResult: responseText
                 }),
                 credentials: 'include'
             });
