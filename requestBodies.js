@@ -98,6 +98,9 @@ const REQUESTS = {
         },
         "DELETEbody":{
             body:""
+        },
+        "PUTbody":{
+            body:""
         }
     },
     qpispAuth: {
@@ -172,6 +175,9 @@ const REQUESTS = {
         },
         "DELETEbody":{
             body:""
+        },
+        "PUTbody":{
+            body:""
         }
     },
     pispAuthTax: {
@@ -230,6 +236,9 @@ const REQUESTS = {
             body:""
         },
         "DELETEbody":{
+            body:""
+        },
+        "PUTbody":{
             body:""
         }
     },
@@ -293,6 +302,9 @@ const REQUESTS = {
         },
         "DELETEbody":{
             body:""
+        },
+        "PUTbody":{
+            body:""
         }
     },
     listPassports: {
@@ -354,6 +366,9 @@ const REQUESTS = {
             body:""
         },
         "DELETEbody":{
+            body:""
+        },
+        "PUTbody":{
             body:""
         }
     },
@@ -420,6 +435,9 @@ const REQUESTS = {
         },
         "DELETEbody":{
             body:""
+        },
+        "PUTbody":{
+            body:""
         }
     },
     taxRequirement: {
@@ -482,6 +500,9 @@ const REQUESTS = {
         },
         "DELETEbody":{
             body:""
+        },
+        "PUTbody":{
+            body:""
         }
     },
     VRP: {
@@ -543,6 +564,9 @@ const REQUESTS = {
             body:""
         },
         "DELETEbody":{
+            body:""
+        },
+        "PUTbody":{
             body:""
         }
     },

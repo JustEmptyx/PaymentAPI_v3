@@ -3,19 +3,30 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const session = require('express-session');
 
-// Import PISPauth functions
 const PISPauth = require('../PISPauthNew');
+const defaultBodies = require('../defaultBodies');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+app.use(cors({origin: true,credentials: true}));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Store function states and contexts
+app.use(express.json())
+app.use(session({
+    secret: 'Softclub', 
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, httpOnly:true,maxAge:24*60*60*1000,sameSite:'lax',path:'/'},name:'custom_sid' 
+}));
+app.use((req, res, next) => {
+    // console.log('Session ID:', req.sessionID);
+    // console.log('Session:', req.session);
+    next();
+});
+debugger;
 const functionStates = {};
 const functionContexts = {};
 
@@ -123,7 +134,7 @@ const functionMappings = {
     'GET OBtoken': 'createDboClientToken',
 
     'GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}':'abstractGETrequest',
-    'PUT /paymentConsents/createSpecialPartExternalRepresentation':'putConsentExternalRepresentationSpecialPart',
+    'PUT /paymentConsents/createSpecialPartExternalRepresentation':'putConsentSpecialPartExternalRepresentation',
 
     'POST /paymentConsents/domestic': 'postDomesticConsent',
     'PUT /paymentConsents/createExternalRepresentation' : 'putDomesticConsentExternalRepresentation',
@@ -204,25 +215,33 @@ const functionMappings = {
     "DELETE /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 };
 
-// Get list of available functions
-// app.get('/api/functions', (req, res) => {
-//     const functions = Object.keys(functionMappings);
-//     res.json({ functions });
-// });
 
 app.get('/api/functions', (req, res) => {
-    // Create a copy of functionGroups with function details
     const response = {};
     for (const [groupName, functionNames] of Object.entries(functionGroups)) {
         response[groupName] = functionNames.map(name => ({
             name: name,
-            // Include any additional function metadata here
         }));
     }
     res.json({ groups: response });
 });
 
-// Get function context
+app.get('/api/defaultBody/:functionName', (req, res) => {
+    const { functionName } = req.params;
+    const defaultBody = defaultBodies[functionName];
+    if (defaultBody !== undefined) {
+        res.json({ 
+            success: true, 
+            body: defaultBody 
+        });
+    } else {
+        res.json({ 
+            success: false, 
+            body: null 
+        });
+    }
+});
+
 app.get('/api/context/:functionName', (req, res) => {
     const { functionName } = req.params;
     res.json(functionContexts[functionName] || {
@@ -232,15 +251,15 @@ app.get('/api/context/:functionName', (req, res) => {
     });
 });
 
-// Update function context
 app.post('/api/context/:functionName', (req, res) => {
     const { functionName } = req.params;
-    const { body, enabledHeaders } = req.body;
+    const { body, enabledHeaders, apiKey, lastResult } = req.body;
 
     if (!functionContexts[functionName]) {
         functionContexts[functionName] = {
             body: '{}',
             enabledHeaders: [],
+            apiKey: null,
             lastResult: null
         };
     }
@@ -252,10 +271,17 @@ app.post('/api/context/:functionName', (req, res) => {
         functionContexts[functionName].enabledHeaders = enabledHeaders;
     }
 
+    if (apiKey !== undefined) {
+        functionContexts[functionName].apiKey = apiKey;
+    }
+
+    if (lastResult !== undefined) {
+        functionContexts[functionName].lastResult = lastResult;
+    }
+
     res.json({ success: true });
 });
 
-// Update function result
 app.post('/api/context/:functionName/result', (req, res) => {
     const { functionName } = req.params;
     const { result } = req.body;
@@ -272,39 +298,33 @@ app.post('/api/context/:functionName/result', (req, res) => {
     res.json({ success: true });
 });
 
-// Default config
-let appConfig = {
-        alg: "BELTM256",
-        typ: "JOSE",
-        url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
-        url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
-        client_id_pisp: "PISP2TEST",
-        client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
-        client_id_qpisp: "BELKARTPAY_NPC_TEST",
-        client_secret_qpisp: "aES5biV0eWVkVWUHzD36it5X2yE7DSkF",
-        client_id_tpe: "ENTERPRISESOFT",
-        client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
-        client_id_dbo:"digitalChannels",
-        client_secret_dbo:"rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
-        apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f", //V087_TEST1
-        // apikey: "ed999501-fe4e-4f18-845e-d69eab692941", //test.client-12
-        client_otp: "asb123",
-        mobile_number: "+375-255427989",
-        access_token:""
-    };
-
-// Get current config
-app.get('/api/config', (req, res) => {
-    res.json({ success: true, config: appConfig });
+app.get('/api/session', (req, res) => {
+    debugger;
+    res.json({
+        success: true,
+        sessionId: req.sessionID,
+        config: req.session.config || 'No config in session',
+    });
 });
 
-// Update config
+app.get('/api/config', (req, res) => {
+    if(!req.session.config){
+        req.session.config = { ...PISPauth.defaultConfig}
+    }
+    res.json({ success: true, config: req.session.config });
+});
+
 app.post('/api/config', (req, res) => {
+    debugger;
     try {
         const { config } = req.body;
+        console.log('Updating config for session:', req.sessionID);
+        if (!req.session.config) {
+            req.session.config = { ...PISPauth.defaultConfig };
+        }
         if (config && typeof config === 'object') {
-            appConfig = { ...appConfig, ...config };
-            res.json({ success: true, config: appConfig });
+            req.session.config = { ...req.session.config, ...config };
+            res.json({ success: true, config: req.session.config });
         } else {
             res.status(400).json({ success: false, error: 'Invalid config format' });
         }
@@ -316,7 +336,6 @@ app.post('/api/config', (req, res) => {
     }
 });
 
-// Get available functions
 app.get('/api/functions', (req, res) => {
     const functions = Object.getOwnPropertyNames(PISPauth)
         .filter(name => typeof PISPauth[name] === 'function' && name !== 'main1')
@@ -324,8 +343,11 @@ app.get('/api/functions', (req, res) => {
     res.json({ functions });
 });
 
-// Execute function
 app.post('/api/execute/:functionName', async (req, res) => {
+    debugger;
+    if (!req.session.config) {
+        req.session.config = { ...PISPauth.defaultConfig };
+    }
     const { functionName } = req.params;
     let { requestBody, enabledHeaders = [] } = req.body;
 
@@ -337,53 +359,75 @@ app.post('/api/execute/:functionName', async (req, res) => {
                 error: 'Function not found'
             });
         }
-        // Handle the request body properly
+        
         let parsedBody;
         if (typeof requestBody === 'string') {
             try {
-                // First try to parse it as JSON
+                
                 parsedBody = JSON.parse(requestBody);
             } catch (e) {
-                // If it's not valid JSON, keep it as is
+                
                 parsedBody = requestBody;
             }
         } else if (typeof requestBody === 'object' && requestBody !== null) {
-            // If it's already an object, use it directly
+            
             parsedBody = requestBody;
         } else {
-            // Fallback to empty object
+            
             parsedBody = {};
         }
-        // Execute the function with the parsed body
+        
         if (req.body.apiKey) {
             if (enabledHeaders.includes('x-api-key')) {
-                appConfig.apikey = req.body.apiKey;
+                req.session.config.apikey = req.body.apiKey;
             } else if (enabledHeaders.includes('authorization')) {
-                appConfig.access_token = req.body.apiKey;
+                req.session.config.access_token = req.body.apiKey;
             }
         }
-        const result = await PISPauth[actualFunctionName](appConfig, parsedBody, enabledHeaders);
+        
+        // Store response headers info
+        const responseHeaders = {};
+        
+        // Wrap the original function to capture headers
+        const originalFunction = PISPauth[actualFunctionName];
+        const wrappedFunction = async function(config, body, headers) {
+            // Clear breadcrumbId before call
+            config.breadcrumbId = null;
+            const result = await originalFunction(config, body, headers);
+            // Capture breadcrumbId from config or result
+            if (config.breadcrumbId) {
+                responseHeaders['breadcrumbId'] = config.breadcrumbId;
+            }
+            return result;
+        };
+        
+        // Temporarily replace function with wrapped version
+        PISPauth[actualFunctionName] = wrappedFunction;
+        
+        const result = await PISPauth[actualFunctionName](req.session.config, parsedBody, enabledHeaders);
+        
+        // Restore original function
+        PISPauth[actualFunctionName] = originalFunction;
+        
         if (enabledHeaders.includes('x-api-key') && req.body.apiKey) {
-            appConfig.apikey = req.body.apiKey;
+            req.session.config.apikey = req.body.apiKey;
         } else if (enabledHeaders.includes('authorization') && req.body.apiKey) {
-            appConfig.access_token = req.body.apiKey;
+            req.session.config.access_token = req.body.apiKey;
         }
-        // Token handling remains the same
         const tokenFunctions = ['createTokenQPISP', 'createTokenTPE', 'createTokenPISP', 'createDboClientToken'];
         if (tokenFunctions.includes(actualFunctionName) && result && result.access_token) {
-            appConfig.access_token = result.access_token;
+            req.session.config.access_token = result.access_token;
             console.log('Access token updated in config');
         }
-        // Update the function context with the last result
         if (!functionContexts[functionName]) {
             functionContexts[functionName] = {};
         }
         functionContexts[functionName].lastResult = result;
 
-        // Return the result
         res.json({
             success: true,
-            data: result
+            data: result,
+            headers: responseHeaders
         });
     } catch (error) {
         console.error(`Error executing ${functionName}:`, error);
@@ -395,12 +439,509 @@ app.post('/api/execute/:functionName', async (req, res) => {
     }
 });
 
-// Serve the main HTML file
+// Sequence execution endpoint
+app.post('/api/executeSequence', async (req, res) => {
+    if (!req.session.config) {
+        req.session.config = { ...PISPauth.defaultConfig };
+    }
+    
+    const { paymentType, steps, requestBody, enabledHeaders = [], apiKey } = req.body;
+    
+    try {
+        // Parse request body
+        let parsedBody;
+        if (typeof requestBody === 'string') {
+            try {
+                parsedBody = JSON.parse(requestBody);
+            } catch (e) {
+                parsedBody = requestBody;
+            }
+        } else if (typeof requestBody === 'object' && requestBody !== null) {
+            parsedBody = requestBody;
+        } else {
+            parsedBody = {};
+        }
+        
+        // Set API key in config from request or session
+        if (apiKey) {
+            req.session.config.apikey = apiKey;
+        } else if (!req.session.config.apikey) {
+            // Use default or keep existing
+        }
+        
+        // Build sequence of functions based on paymentType and steps
+        const sequence = buildSequence(paymentType, steps);
+        const results = [];
+        
+        // Execute each function sequentially
+        for (const funcInfo of sequence) {
+            try {
+                // Check if this is a special function (checkApikey, createDBOtokenClient, abstractGETrequest)
+                if (funcInfo.isSpecial) {
+                    const result = await executeSpecialFunction(
+                        funcInfo.name,
+                        req.session.config,
+                        parsedBody,
+                        results,
+                        paymentType
+                    );
+                    
+                    results.push({
+                        name: funcInfo.displayName,
+                        success: result.success,
+                        data: result.data,
+                        error: result.error,
+                        headers: result.headers || {},
+                        statusCode: result.statusCode || null
+                    });
+                } else {
+                    const actualFunctionName = functionMappings[funcInfo.name];
+                    if (actualFunctionName && PISPauth[actualFunctionName]) {
+                        // For createConsent, use x-api-key header
+                        let headersToUse = enabledHeaders;
+                        if (funcInfo.useApiKeyHeader) {
+                            headersToUse = [...enabledHeaders, 'x-api-key'];
+                        }
+                        
+                        let bodyToUse = parsedBody;
+                        if (funcInfo.modifyBody && typeof funcInfo.modifyBody === 'function') {
+                            bodyToUse = funcInfo.modifyBody(parsedBody, results);
+                        }
+                        
+                        // Clear breadcrumbId before call
+                        req.session.config.breadcrumbId = null;
+                        
+                        const result = await PISPauth[actualFunctionName](
+                            req.session.config, 
+                            bodyToUse, 
+                            headersToUse
+                        );
+                        
+                        // Capture breadcrumbId from config
+                        const responseHeaders = {};
+                        if (req.session.config.breadcrumbId) {
+                            responseHeaders.breadcrumbId = req.session.config.breadcrumbId;
+                        }
+                        
+                        // Extract statusCode from result if it exists
+                        let statusCode = null;
+                        if (result && typeof result === 'object' && result.statusCode !== undefined) {
+                            statusCode = result.statusCode;
+                        } else if (req.session.config && req.session.config.lastStatusCode !== undefined) {
+                            statusCode = req.session.config.lastStatusCode;
+                        }
+                        
+                        results.push({
+                            name: funcInfo.displayName,
+                            success: true,
+                            data: result,
+                            headers: responseHeaders,
+                            statusCode: statusCode
+                        });
+                    } else {
+                        results.push({
+                            name: funcInfo.displayName,
+                            success: false,
+                            error: `Function ${funcInfo.name} not found`
+                        });
+                    }
+                }
+            } catch (error) {
+                results.push({
+                    name: funcInfo.displayName,
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        res.json({
+            success: true,
+            data: results
+        });
+    } catch (error) {
+        console.error('Error executing sequence:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Unknown error occurred'
+        });
+    }
+});
+
+// Helper function to execute special functions
+async function executeSpecialFunction(funcName, config, requestBody, results, paymentType) {
+    try {
+        if (funcName === 'checkApikey') {
+            // GET {url_kc}/auth/realms/SCRealm/check?apiKey={config.apikey}
+            const url = `${config.url_kc}/auth/realms/SCRealm/check?apiKey=${config.apikey}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            const responseHeaders = {};
+            const breadcrumbId = response.headers.get('x-breadcrumb-id') || response.headers.get('breadcrumbId');
+            const statusCode = response.status;
+            if (breadcrumbId) {
+                responseHeaders.breadcrumbId = breadcrumbId;
+                config.breadcrumbId = breadcrumbId;
+            }
+            return { success: true, data, headers: responseHeaders, statusCode };
+        }
+        
+        if (funcName === 'createDBOtokenClient') {
+            // Clear breadcrumbId before call
+            config.breadcrumbId = null;
+            // Clear lastStatusCode before call
+            config.lastStatusCode = null;
+            // Call createDboClientToken with empty body
+            const result = await PISPauth.createDboClientToken(config, {}, ['authorization']);
+            // Save access_token to session config
+            if (result && result.access_token) {
+                config.access_token = result.access_token;
+            }
+            // Capture breadcrumbId and statusCode from config
+            const responseHeaders = {};
+            const statusCode = config.lastStatusCode || null;
+            if (config.breadcrumbId) {
+                responseHeaders.breadcrumbId = config.breadcrumbId;
+            }
+            return { success: true, data: result, headers: responseHeaders, statusCode };
+        }
+        
+        if (funcName === 'abstractGETrequest') {
+            // Build the path from checkApikey result and first consent result
+            const checkApikeyResult = results.find(r => r.name === 'checkApikey');
+            const createConsentResult = results.find(r => r.name.includes('Consent') && !r.name.includes('patch') && !r.name.includes('put'));
+            
+            // Get clientName from checkApikey response (not login)
+            let login = 'unknown';
+            if (checkApikeyResult && checkApikeyResult.data) {
+                login = checkApikeyResult.data.clientName || checkApikeyResult.data.login || 'unknown';
+            }
+            
+            // Get consentId from createConsent response (data field contains the id)
+            let consentId = 'unknown';
+            if (createConsentResult && createConsentResult.data) {
+                // The consent ID is in data.{consentIdField}
+                const consentIdMap = {
+                    'domestic': 'domesticConsentId',
+                    'domesticTax': 'domesticTaxConsentId',
+                    'listAccounts': 'listAccountsConsentId',
+                    'listPassports': 'listPassportsConsentId',
+                    'requirement': 'requirementConsentId',
+                    'taxRequirement': 'taxRequirementConsentId'
+                };
+                const idField = consentIdMap[paymentType];
+                // Check if data has the consentId directly or wrapped in another data object
+                const consentData = createConsentResult.data.data || createConsentResult.data;
+                consentId = consentData[idField] || consentData.consentId || 'unknown';
+            }
+            
+            // Pass the path as a STRING directly to abstractGETrequest
+            const path = `/accountsList/login/${login}/paymentConsents/${consentId}`;
+            // abstractGETrequest expects (config, requestBody, headers)
+            // requestBody should be the path string
+            // Clear breadcrumbId before call
+            config.breadcrumbId = null;
+            // Clear lastStatusCode before call
+            config.lastStatusCode = null;
+            const result = await PISPauth.abstractGETrequest(config, String(path), ['application/json']);
+            // Capture breadcrumbId and statusCode from config
+            const responseHeaders = {};
+            const statusCode = config.lastStatusCode || null;
+            if (config.breadcrumbId) {
+                responseHeaders.breadcrumbId = config.breadcrumbId;
+            }
+            return { success: true, data: result, headers: responseHeaders, statusCode };
+        }
+        
+        if (funcName === 'prepareExternalRepresentationBody') {
+            const abstractGetResult = results.find(r => r.name === 'GET request');
+            let preparedBody = {};
+            if (abstractGetResult && abstractGetResult.data) {
+                preparedBody = JSON.parse(JSON.stringify(abstractGetResult.data));
+            }
+            // Call user-defined function with abstractGetRequest data and paymentType
+            const userResult = await PISPauth.prepareExternalRepresentationBody(preparedBody, paymentType);
+            return { success: true, data: userResult };
+        }
+        
+        if (funcName.startsWith('put') && funcName.endsWith('ConsentExternalRepresentation')) {
+            // Get the prepared body from previous step
+            const prepResult = results.find(r => r.name === 'prepareExternalRepresentationBody');
+            const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
+            // Call the function with only 'application/json' header
+            const actualFunctionName = funcName;
+            if (PISPauth[actualFunctionName]) {
+                // Clear breadcrumbId before call
+                config.breadcrumbId = null;
+                // Clear lastStatusCode before call
+                config.lastStatusCode = null;
+                const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json']);
+                // Capture breadcrumbId and statusCode from config
+                const responseHeaders = {};
+                const statusCode = config.lastStatusCode || null;
+                if (config.breadcrumbId) {
+                    responseHeaders.breadcrumbId = config.breadcrumbId;
+                }
+                return { success: true, data: result, headers: responseHeaders, statusCode };
+            }
+            return { success: false, error: `Function ${actualFunctionName} not found` };
+        }
+
+        if (funcName === 'prepareExternalRepresentationSpecialPartBody') {
+            // Get the result from step 5 (prepareExternalRepresentationBody)
+            const prepBodyResult = results.find(r => r.name === 'prepareExternalRepresentationBody');
+            // Get the result from step 6 (put*ConsentExternalRepresentation)
+            const putExtRepResult = results.find(r => r.name.endsWith('ConsentExternalRepresentation') && r.name.startsWith('put'));
+            debugger;
+            let baseBody = {};
+            if (prepBodyResult && prepBodyResult.data) {
+                baseBody = JSON.parse(JSON.stringify(prepBodyResult.data));
+            }
+            
+            // Get externalRepresentation from step 6 response
+            if (putExtRepResult && putExtRepResult.data) {
+                const putData = putExtRepResult.data.data || putExtRepResult.data;
+                if (putData && putData.externalRepresentation) {
+                    baseBody.data = baseBody.data || {};
+                    baseBody.data.externalRepresentation = putData.externalRepresentation;
+                }
+            }
+            
+            // Call user-defined function to prepare special part body
+            const userResult = await PISPauth.prepareExternalRepresentationSpecialPartBody(config, baseBody);
+            return { success: true, data: userResult };
+        }
+        
+        if (funcName === 'putConsentExternalRepresentationSpecialPart') {
+            // Get the prepared body from previous step
+            const prepResult = results.find(r => r.name === 'prepareExternalRepresentationSpecialPartBody');
+            const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
+            // Call the function with only 'application/json' header
+            const actualFunctionName = 'putConsentSpecialPartExternalRepresentation';
+            if (PISPauth[actualFunctionName]) {
+                // Clear breadcrumbId before call
+                config.breadcrumbId = null;
+                // Clear lastStatusCode before call
+                config.lastStatusCode = null;
+                const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json']);
+                // Capture breadcrumbId and statusCode from config
+                const responseHeaders = {};
+                const statusCode = config.lastStatusCode || null;
+                if (config.breadcrumbId) {
+                    responseHeaders.breadcrumbId = config.breadcrumbId;
+                }
+                return { success: true, data: result, headers: responseHeaders, statusCode };
+            }
+            return { success: false, error: `Function ${actualFunctionName} not found` };
+        }
+        
+        if (funcName === 'prepareAuthorisationBody') {
+            // Get results from all previous steps
+            const prepBodyResult = results.find(r => r.name === 'prepareExternalRepresentationBody');
+            const putExtRepResult = results.find(r => r.name.endsWith('ConsentExternalRepresentation') && r.name.startsWith('put'));
+            const prepSpecialPartResult = results.find(r => r.name === 'prepareExternalRepresentationSpecialPartBody');
+            const putSpecialPartResult = results.find(r => r.name === 'putConsentExternalRepresentationSpecialPart');
+            
+            const body1 = (prepBodyResult && prepBodyResult.data) ? prepBodyResult.data : {};
+            const body2 = (putExtRepResult && putExtRepResult.data) ? putExtRepResult.data : {};
+            const body3 = (prepSpecialPartResult && prepSpecialPartResult.data) ? prepSpecialPartResult.data : {};
+            const body4 = (putSpecialPartResult && putSpecialPartResult.data) ? putSpecialPartResult.data : {};
+            
+            const userResult = await PISPauth.prepareAuthorisationBody(body1, body2, body3, body4);
+            return { success: true, data: userResult };
+        }
+        
+        if (funcName.startsWith('patch') && funcName.endsWith('Consent')) {
+            const prepResult = results.find(r => r.name === 'prepareAuthorisationBody');
+            const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
+            const actualFunctionName = funcName;
+            if (PISPauth[actualFunctionName]) {
+                const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'x-idempotency-key']);
+                const responseHeaders = {};
+                if (config.breadcrumbId) {
+                    responseHeaders.breadcrumbId = config.breadcrumbId;
+                }
+                return { success: true, data: result, headers: responseHeaders };
+            }
+            return { success: false, error: `Function ${actualFunctionName} not found` };
+        }
+
+        if (funcName === 'preparePaymentsBody') {
+            // Get the POST Consent result from Step 1 (request body)
+            const postConsentResult = results.find(r => r.name.startsWith('post') && r.name.includes('Consent') && !r.name.includes('patch'));
+            const postConsentBody = (postConsentResult && postConsentResult.data) ? postConsentResult.data : {};
+            
+            // Get the PATCH Consent result from Step 7 (response body)
+            const patchConsentResult = results.find(r => r.name.startsWith('patch') && r.name.includes('Consent'));
+            const patchConsentBody = (patchConsentResult && patchConsentResult.data) ? patchConsentResult.data : {};
+            
+            // Call user-defined function to prepare payments body
+            // Parameters: type, reqConsent (POST body), resConsent (PATCH response body)
+            const userResult = await PISPauth.preparePaymentsBody(paymentType, postConsentBody, patchConsentBody);
+            return { success: true, data: userResult };
+        }
+        
+        if (funcName === 'createPayment') {
+            // Get the prepared body from preparePaymentsBody
+            debugger;
+            const prepResult = results.find(r => r.name === 'preparePaymentsBody');
+            const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
+            const actualFunctionName = `post${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}Payment`;
+            if (PISPauth[actualFunctionName]) {
+                const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'x-api-key', 'x-idempotency-key']);
+                const responseHeaders = {};
+                if (config.breadcrumbId) {
+                    responseHeaders.breadcrumbId = config.breadcrumbId;
+                }
+                return { success: true, data: result, headers: responseHeaders };
+            }
+            return { success: false, error: `Function ${actualFunctionName} not found` };
+        }
+        
+        return { success: false, error: `Unknown special function: ${funcName}` };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// Helper function to build sequence based on payment type and steps
+function buildSequence(paymentType, steps) {
+    const sequence = [];
+    
+    // Map payment type to function prefixes
+    const prefixMap = {
+        'domestic': 'Domestic',
+        'domesticTax': 'DomesticTax',
+        'listAccounts': 'ListAccounts',
+        'listPassports': 'ListPassports',
+        'requirement': 'Requirement',
+        'taxRequirement': 'TaxRequirement'
+    };
+    
+    const prefix = prefixMap[paymentType] || 'Domestic';
+    
+    // Step 1: Create Consent (always included if any step is selected)
+    if (steps.includes('createConsent') || steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: `POST /paymentConsents/${paymentType}`,
+            displayName: `post${prefix}Consent`,
+            useApiKeyHeader: true
+        });
+    }
+    
+    // Step 2: checkApikey (if authoriseConsent or createPayment)
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: 'checkApikey',
+            displayName: 'checkApikey',
+            isSpecial: true
+        });
+    }
+    
+    // Step 3: createDBOtokenClient (if authoriseConsent or createPayment)
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: 'createDBOtokenClient',
+            displayName: 'createDBOtokenClient',
+            isSpecial: true
+        });
+    }
+    
+    // Step 4: Abstract GET Request (if authoriseConsent or createPayment)
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: 'abstractGETrequest',
+            displayName: 'GET request',
+            isSpecial: true
+        });
+    }
+    
+    // Step 5: Prepare External Representation Body (if authoriseConsent or createPayment)
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: 'prepareExternalRepresentationBody',
+            displayName: 'prepareExternalRepresentationBody',
+            isSpecial: true
+        });
+    }
+    
+    // Step 5.1: Put External Representation (if authoriseConsent or createPayment)
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: `put${prefix}ConsentExternalRepresentation`,
+            displayName: `put${prefix}ConsentExternalRepresentation`,
+            isSpecial: true,
+        });
+    }
+    
+    // Step 5.2: Prepare Special Part External Representation Body
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: 'prepareExternalRepresentationSpecialPartBody',
+            displayName: 'prepareExternalRepresentationSpecialPartBody',
+            isSpecial: true
+        });
+    }
+
+    // Step 5.3: Put Special Part External Representation
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: 'putConsentExternalRepresentationSpecialPart',
+            displayName: 'putConsentExternalRepresentationSpecialPart',
+            isSpecial: true
+        });
+    }
+    
+    // Step 6: Prepare Authorisation Body
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: 'prepareAuthorisationBody',
+            displayName: 'prepareAuthorisationBody',
+            isSpecial: true
+        });
+    }
+    
+    // Step 7: Patch Consent
+    if (steps.includes('authoriseConsent') || steps.includes('createPayment')) {
+        sequence.push({
+            name: `patch${prefix}Consent`,
+            displayName: `patch${prefix}Consent`,
+            isSpecial: true,
+            useIdempotencyKey: true
+        });
+    }
+    
+    // Step 7.5: Prepare Payments Body (if createPayment)
+    if (steps.includes('createPayment')) {
+        sequence.push({
+            name: 'preparePaymentsBody',
+            displayName: 'preparePaymentsBody',
+            isSpecial: true
+        });
+    }
+    
+    // Step 8: Create Payment
+    if (steps.includes('createPayment')) {
+        sequence.push({
+            name: 'createPayment',
+            displayName: `post${prefix}Payment`,
+            isSpecial: true,
+        });
+    }
+    
+    return sequence;
+}
+
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
