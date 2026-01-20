@@ -11,9 +11,29 @@ const {sortObjectAlphabetically,getRequestBody,findAttribute} = require('./utils
 const {scCryptoSign,scCryptoHash} = require('./cryptoManager')
 const{convertToBase64, convertToBase64URL, convertBase64UrlToBase64, convertBase64ToBase64Url, decodeBase64, decodeBase64Url} = require('./base64converter')
 const fs = require("fs");
+const {unixDate,UnixDate,addYearsToDate,subtractYearsFromDate} = ('./dateModule')
 const {format} = require("date-fns");
 const {getClientAssertion,createTokenWithClientAssertion} = require("./clientSecretJWTAuth")
 const {stringify} = require("uuid");
+
+let defaultConfig = {
+    alg: "BELTM256",
+    typ: "JOSE",
+    url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
+    url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
+    client_id_pisp: "PISP2TEST",
+    client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
+    client_id_qpisp: "BELKARTPAY_NPC_TEST",
+    client_secret_qpisp: "aES5biV0eWVkVWUHzD36it5X2yE7DSkF",
+    client_id_tpe: "ENTERPRISESOFT",
+    client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
+    client_id_dbo: "digitalChannels",
+    client_secret_dbo: "rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
+    apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f",
+    client_otp: "asb123",
+    mobile_number: "+375-255427989",
+    access_token: ""
+};
 
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 let authType = " PAUapikey" // PAUapikey, OBclientCredentials
@@ -66,24 +86,40 @@ async function createTokenTPE(config){
   return result
 }
 
-async function createDboClientToken(config){
-    const response = await fetch(config.url_swagger+"auth/realms/SCRealm/protocol/openid-connect/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-        client_id: config.client_id_dbo,
-        client_secret: config.client_secret_dbo,
-        grant_type: "client_credentials",
-        scope: "SC-APPS online-banking"
-    })
-  });
-  const result = await response.json();
-  if (result.access_token) {
-    config.access_token = result.access_token;
-  }
-  return result
+async function createDboClientToken(config = {}, body = {}, enabledHeaders = []) {
+    try {
+        // Create a new config object that merges default with provided config
+        const effectiveConfig = { ...defaultConfig, ...config };
+        
+        const response = await fetch(effectiveConfig.url_swagger + "auth/realms/SCRealm/protocol/openid-connect/token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+                client_id: effectiveConfig.client_id_dbo,
+                client_secret: effectiveConfig.client_secret_dbo,
+                grant_type: "client_credentials",
+                scope: "SC-APPS online-banking"
+            })
+        });
+        const result = await response.json();
+        
+        // Return both the result and the updated config
+        if (result.access_token) {
+            return {
+                ...result,
+                updatedConfig: {
+                    ...effectiveConfig,
+                    access_token: result.access_token
+                }
+            };
+        }
+        return result;
+    } catch (error) {
+        console.error('Error in createDboClientToken:', error);
+        throw error;
+    }
 }
 
 
@@ -177,7 +213,8 @@ async function generateHeader(config, additionalInfo){
   return headerRaw
 }
 
-const si= require("./Signature")
+const si= require("./Signature");
+const dateModule = require('./dateModule.js');
 
 async function makePOSTrequest(config,projectName,projectUrl,requestBody,enabledHeaders = []){
     let requestBodyName = "POSTbody"
@@ -655,7 +692,7 @@ async function createSpecialPartObject(config,imitIns){
           "signatureDateTime": updatedFormattedDate,
           "status": "Authorised",
           "statusUpdateDateTime": formattedDate,
-          "subjectKeyIdentifier": "2FDBB8753A0227648C27549D02F04ED4D5F3FDD7"
+          "subjectKeyIdentifier": "8627DBC521A8F18A4CDDD8D396949CC333ED762E"
         }
   }
 }
@@ -1504,7 +1541,7 @@ async function generateSignatureQPISP(config,method,token,fapiInteractionId,idem
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1550,7 +1587,7 @@ async function generateSignaturePaymentsInstant(config,method,token,fapiInteract
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1595,7 +1632,7 @@ async function generateSignaturePOSTinstantInvoice(config,method,token,fapiInter
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1640,7 +1677,7 @@ async function generateSignaturePATCHinstantInvoice(config,method,token,fapiInte
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1680,7 +1717,7 @@ async function generateSignatureURLforPatchPaymentConsentInstant(config,method,t
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1723,7 +1760,7 @@ async function generateSignatureQPISPdeletePaymentConsentInstant(config,method,t
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1766,7 +1803,7 @@ async function generateSignatureQPISPgetStatusPaymentConsentInstant(config,metho
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1811,7 +1848,7 @@ async function generateSignatureQPISPgetPaymentsInstant(config,method,token,fapi
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1854,7 +1891,7 @@ async function generateSignatureQPISPgetBalancesPaymentConsentInstant(config,met
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -1897,7 +1934,7 @@ async function generateSignatureQPISPgetAccountsPaymentConsentInstant(config,met
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
@@ -2349,24 +2386,24 @@ async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extRepr
 }
 
 async function main1() {
-    const config = {
-        alg: "BELTM256",
-        typ: "JOSE",
-        url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
-        url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
-        client_id_pisp: "PISP2TEST",
-        client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
-        client_id_qpisp: "BELKARTPAY_NPC_TEST",
-        client_secret_qpisp: "aES5biV0eWVkVWUHzD36it5X2yE7DSkF",
-        client_id_tpe: "ENTERPRISESOFT",
-        client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
-        client_id_dbo:"digitalChannels",
-        client_secret_dbo:"rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
-        apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f", //V087_TEST1
-        // apikey: "ed999501-fe4e-4f18-845e-d69eab692941", //test.client-12
-        client_otp: "asb123",
-        mobile_number: "+375-255427989"
-    }
+    // const config = {
+    //     alg: "BELTM256",
+    //     typ: "JOSE",
+    //     url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
+    //     url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
+    //     client_id_pisp: "PISP2TEST",
+    //     client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
+    //     client_id_qpisp: "BELKARTPAY_NPC_TEST",
+    //     client_secret_qpisp: "aES5biV0eWVkVWUHzD36it5X2yE7DSkF",
+    //     client_id_tpe: "ENTERPRISESOFT",
+    //     client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
+    //     client_id_dbo:"digitalChannels",
+    //     client_secret_dbo:"rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
+    //     apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f", //V087_TEST1
+    //     // apikey: "ed999501-fe4e-4f18-845e-d69eab692941", //test.client-12
+    //     client_otp: "asb123",
+    //     mobile_number: "+375-255427989"
+    // }
 
     // const config = {
     //     alg: "BELTM256",
@@ -2608,7 +2645,7 @@ async function main1() {
 // main1()
 // let res = convertBase64UrlToBase64("MIIGmQYJKoZIhvcNAQcCoIIGijCCBoYCAQExDzANBgkqcAACACJlH1EFADALBgkqhkiG9w0BBwGgggTDMIIEvzCCBHmgAwIBAgIMQOX0DXB1vxEAAAezMA0GCSpwAAIAImUtDAUAMIHDMVUwUwYDVQQDDExTVEVORCDQoNC10YHQv9GD0LHQu9C40LrQsNC90YHQutC40Lkg0YPQtNC-0YHRgtC-0LLQtdGA0Y_RjtGJ0LjQuSDRhtC10L3RgtGAMV0wWwYDVQQKDFRTVEVORCDQoNCj0J8gItCd0LDRhtC40L7QvdCw0LvRjNC90YvQuSDRhtC10L3RgtGAINGN0LvQtdC60YLRgNC-0L3QvdGL0YUg0YPRgdC70YPQsyIxCzAJBgNVBAYTAkJZMB4XDTIzMDIwMzA3MDQ0MloXDTI2MDIwMjIwNTk1OVowgcExFzAVBgNVBAMTDnNlcnZpY2VjZW50cmUxMRcwFQYDVQQKEw5zZXJ2aWNlY2VudHJlMTELMAkGA1UEBhMCQlkxFzAVBgNVBAgMDtCc0LjQvdGB0LrQsNGPMRMwEQYDVQQHDArQnNC40L3RgdC6MSgwJgYDVQQJDB_QndC10LfQsNCy0LjRgdC40LzQvtGB0YLQuCwgMTgyMRcwFQYDVQQEDA7QlNC10L3QuNGB0L7QsjEPMA0GA1UEKQwG0JQu0JQuMF0wGAYKKnAAAgAiZS0CAQYKKnAAAgAiZS0DAQNBAHuDmY5R8O66-S9qQligOIKzXnkdT7cGHe2F8rMR_2xk6H3nU3mf9l9zc4R6yp428iC0OOxLG3MOeSx4GHQSQOOjggJKMIICRjAXBgNVHSAEEDAOMAwGCipwAQIBAQEDAgEwHwYDVR0jBBgwFoAUAffyCpLr7xmazozGzcugMxjK6ZUwCQYDVR0TBAIwADBGBgNVHR8EPzA9MDugOaA3hjVodHRwOi8vZGV2LmF2ZXN0LmJ5L2NhL2NybC9zdGVuZC1nb3NzdW9rLXN1Yi0yMDE5LmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEFBQcwAYYtaHR0cDovL29jc3Atc3J2LnRlc3QuYXZlc3QuYnk6ODA4MC9yZXNwb25kZXIvMEIGCCsGAQUFBzAChjZodHRwOi8vZGV2LmF2ZXN0LmJ5L2NhL2NlcnQvc3RlbmQtZ29zc3Vvay1zdWItMjAxOS5jZXIwHQYDVR0OBBYEFLbXSY7g5no2jpIYEOU4SbDHppZGMAsGA1UdDwQEAwIDuDATBgNVHSUEDDAKBggrBgEFBQcDAjAhBgkqcAECAQEBAQIEFB4SADEAOQAyADgAMwA3ADQANgA1MDwGCCpwAQIBAQUBBDAeLgQhBDgEQQRCBDUEPAQ9BEsEOQAgBDAENAQ8BDgEPQQ4BEEEQgRABDAEQgQ-BEAwGAYIKnABAgEBBQIEDB4KAGEAZABtAGkAbjArBgkqcAECAQEBAQEEHh4cADMAMQA2ADAANwA4ADAAQwAwADAANgBQAEIAMjA9BgkqcAECAQEBAgEEMB4uADEALgAyAC4AMQAxADIALgAxAC4AMgAuADEALgAxAC4AMQAuADIALgAxAC4ANDANBgkqcAACACJlLQwFAAMxAOj7ovuTQJTLsoFKW7MU6S4IcZi8LJX8JvxlYlHwSDI-kQ_COxeIjlcWuWSSYmcTXDGCAZowggGWAgEBMIHUMIHDMVUwUwYDVQQDDExTVEVORCDQoNC10YHQv9GD0LHQu9C40LrQsNC90YHQutC40Lkg0YPQtNC-0YHRgtC-0LLQtdGA0Y_RjtGJ0LjQuSDRhtC10L3RgtGAMV0wWwYDVQQKDFRTVEVORCDQoNCj0J8gItCd0LDRhtC40L7QvdCw0LvRjNC90YvQuSDRhtC10L3RgtGAINGN0LvQtdC60YLRgNC-0L3QvdGL0YUg0YPRgdC70YPQsyIxCzAJBgNVBAYTAkJZAgxA5fQNcHW_EQAAB7MwDQYJKnAAAgAiZR9RBQCgaTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNTExMDYwOTEyMzhaMC8GCSqGSIb3DQEJBDEiBCAi3cY0ez7PGkV0a9ocOpmoyc5Qls0wENF5Niocf_S3lzAOBgoqcAACACJlLQIBBQAEMOZ81ijZw_tZJvGXN42ZZm0UIeaIqO1hnGMuxRfvKlVsMatESAsY3SoIeStaApTw1w")
 // appendToDefinedFile("logs.txt","base64sign",res)
-module.exports = {
+module.exports = {defaultConfig,
     createTokenQPISP,createTokenTPE,createTokenPISP,createDboClientToken,
     abstractGETrequest, abstractDELETErequest,
     postDomesticConsent,patchDomesticConsent,postDomesticPayment,putDomesticConsentExternalRepresentation,
