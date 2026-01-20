@@ -499,3 +499,277 @@ body {
 #function-list::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* Sequence Tab Styles */
+.sequence-container {
+    padding: 20px;
+    max-width: 1200px;
+}
+
+.sequence-container h2 {
+    margin-bottom: 25px;
+    color: var(--text-color);
+    font-size: 1.5rem;
+}
+
+.sequence-section {
+    margin-bottom: 25px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sequence-section h3 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.radio-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.radio-container:hover {
+    border-color: var(--primary-color);
+    background-color: #f9fafb;
+}
+
+.radio-container input[type="radio"] {
+    margin-right: 8px;
+    accent-color: var(--primary-color);
+}
+
+.radio-mark {
+    display: none;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.checkbox-container:hover {
+    border-color: var(--primary-color);
+    background-color: #f9fafb;
+}
+
+.checkbox-container input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: var(--primary-color);
+    width: 18px;
+    height: 18px;
+}
+
+.checkbox-container input[type="checkbox"]:checked ~ .checkmark {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkmark {
+    display: none;
+}
+
+.sequence-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.sequence-actions .btn {
+    padding: 10px 20px;
+}
+
+/* Sequence Results */
+.sequence-results {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.no-results {
+    color: var(--text-light);
+    text-align: center;
+    padding: 30px;
+    font-style: italic;
+}
+
+.result-item {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.result-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.result-status {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.result-status.success {
+    background-color: #ecfdf5;
+    color: #059669;
+}
+
+.result-status.error {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.result-body {
+    padding: 15px;
+}
+
+.result-body pre {
+    margin: 0;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.result-headers {
+    padding: 8px 15px;
+    background-color: #f1f5f9;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.result-headers .header-label {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.875rem;
+}
+
+.result-headers .header-value {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8125rem;
+    color: var(--primary-color);
+    background-color: #eef2ff;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Radio button styling */
+.radio-container input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+}
+
+.sequence-results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sequence-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.sequence-results::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+/* Status Code Badge Styles */
+.result-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-code {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    min-width: 50px;
+    justify-content: center;
+}
+
+/* Success codes (200-299) */
+.status-code-success {
+    background-color: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+/* Redirect codes (300-399) */
+.status-code-redirect {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+/* Client error codes (400-499) */
+.status-code-client-error {
+    background-color: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+}
+
+/* Server error codes (500+) */
+.status-code-server-error {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+/* Info codes (other) */
+.status-code-info {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+}

@@ -232,14 +232,26 @@ async function makePOSTrequest(config,projectName,projectUrl,requestBody,enabled
     console.log(JSON.stringify(signature))
     await appendToDefinedFile("logs.txt","headersList",JSON.stringify(commonHeaders))
     console.log(JSON.stringify(commonHeaders))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0" + projectUrl, {
+  const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0" + projectUrl, {
     method: "POST",
     mode: "cors",
     headers: commonHeaders,
     body: JSON.stringify(requestBody)
   });
+  
+  // Capture breadcrumbId from response headers before reading body
+  const breadcrumbId = response.headers.get('x-breadcrumb-id') || response.headers.get('breadcrumbId');
+  if (breadcrumbId) {
+    config.breadcrumbId = breadcrumbId;
+  }
+  
   await appendToDefinedFile("logs.txt","fullRequest","method: POST \r\n mode: cors \r\n headers: " + JSON.stringify(commonHeaders) + "\r\n" + "body: " + JSON.stringify(requestBody))
   const responseText = await response.text();
+  const statusCode = response.status;
+  
+  // Store statusCode in config for later use
+  config.lastStatusCode = statusCode;
+  
     if (responseText.trim().startsWith('<?xml') || responseText.trim().startsWith('<')) {
         return responseText;
     }
@@ -310,8 +322,18 @@ async function makeGETrequest(config,projectName,projectUrl,requestBody,enabledH
     mode: "cors",
     headers: commonHeaders,
   });
+  
+  // Capture breadcrumbId from response headers before reading body
+  const breadcrumbId = response.headers.get('x-breadcrumb-id') || response.headers.get('breadcrumbId');
+  if (breadcrumbId) {
+    config.breadcrumbId = breadcrumbId;
+  }
+  
   await appendToDefinedFile("logs.txt","fullRequest","method: GET \r\n mode: cors \r\n headers: " + JSON.stringify(commonHeaders) + "\r\n" + "body: " + JSON.stringify(requestBody))
   const responseText = await response.text();
+  const statusCode = response.status;
+  config.lastStatusCode = statusCode;
+  
     if (responseText.trim().startsWith('<?xml') || responseText.trim().startsWith('<')) {
         return responseText;
     }
@@ -381,8 +403,18 @@ async function makePATCHrequest(config,projectName,projectUrl,requestBody,enable
     headers: commonHeaders,
     body: JSON.stringify(requestBody)
   });
+  
+  // Capture breadcrumbId from response headers before reading body
+  const breadcrumbId = response.headers.get('x-breadcrumb-id') || response.headers.get('breadcrumbId');
+  if (breadcrumbId) {
+    config.breadcrumbId = breadcrumbId;
+  }
+  
   await appendToDefinedFile("logs.txt","fullRequest","method: PATCH \r\n mode: cors \r\n headers: " + JSON.stringify(commonHeaders) + "\r\n" + "body: " + JSON.stringify(requestBody))
   const responseText = await response.text();
+  const statusCode = response.status;
+  config.lastStatusCode = statusCode;
+  
     if (responseText.trim().startsWith('<?xml') || responseText.trim().startsWith('<')) {
         return responseText;
     }
@@ -454,6 +486,13 @@ async function makeDELETErequest(config,projectName,projectUrl,requestBody,enabl
             mode: "cors",
             headers: commonHeaders,
         });
+        
+        // Capture breadcrumbId from response headers before reading body
+        const breadcrumbId = response.headers.get('x-breadcrumb-id') || response.headers.get('breadcrumbId');
+        if (breadcrumbId) {
+            config.breadcrumbId = breadcrumbId;
+        }
+        
         await appendToDefinedFile("logs.txt", "fullRequest", "method: DELETE \r\n mode: cors \r\n headers: " +
             JSON.stringify(commonHeaders) + "\r\n" + "body: " + JSON.stringify(requestBody));
         const statusCode = response.status;
@@ -511,7 +550,7 @@ async function makePUTrequest(config,projectName,projectUrl,requestBody,enabledH
         commonHeaders["authorization"] = "Bearer " + config["access_token"]
     }
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
-    let signature = await si.generateSignature(config,"POST",projectUrl,commonHeaders,projectName,requestBodyName)
+    let signature = await si.generateSignature(config,"PUT",projectUrl,commonHeaders,projectName,requestBodyName)
     await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
     commonHeaders['x-jws-signature'] = signature
     console.log(JSON.stringify(signature))
@@ -523,8 +562,18 @@ async function makePUTrequest(config,projectName,projectUrl,requestBody,enabledH
     headers: commonHeaders,
     body: JSON.stringify(requestBody)
   });
+  
+  // Capture breadcrumbId from response headers before reading body
+  const breadcrumbId = response.headers.get('x-breadcrumb-id') || response.headers.get('breadcrumbId');
+  if (breadcrumbId) {
+    config.breadcrumbId = breadcrumbId;
+  }
+  
   await appendToDefinedFile("logs.txt","fullRequest","method: PUT \r\n mode: cors \r\n headers: " + JSON.stringify(commonHeaders) + "\r\n" + "body: " + JSON.stringify(requestBody))
   const responseText = await response.text();
+  const statusCode = response.status;
+  config.lastStatusCode = statusCode;
+  
     if (responseText.trim().startsWith('<?xml') || responseText.trim().startsWith('<')) {
         return responseText;
     }
@@ -2142,34 +2191,14 @@ async function putDomesticConsentExternalRepresentation(config,body,enabledHeade
     return putDomesticConsentExternalRepresentationResponse
 }
 
-async function putDomesticConsentExternalRepresentationSpecialPart(config,body,enabledHeaders){
-    console.log(config)
-    console.log(body)
-    console.log(enabledHeaders)
-    let putDomesticConsentExternalRepresentationSpecialPartResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/domestic",body,enabledHeaders)
-    console.log(JSON.stringify(putDomesticConsentExternalRepresentationSpecialPartResponse))
-    await appendToDefinedFile("logs.txt","putDomesticConsentExternalRepresentationSpecialPartResponse",JSON.stringify(putDomesticConsentExternalRepresentationSpecialPartResponse))
-    return putDomesticConsentExternalRepresentationSpecialPartResponse
-}
-
 async function putDomesticTaxConsentExternalRepresentation(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
     console.log(enabledHeaders)
     let putDomesticTaxConsentExternalRepresentationResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/domesticTax/createExternalRepresentation",body,enabledHeaders)
-    console.log(JSON.stringify(consentTaxCreateResponse))
+    console.log(JSON.stringify(putDomesticTaxConsentExternalRepresentationResponse))
     await appendToDefinedFile("logs.txt","pputDomesticTaxConsentExternalRepresentationResponse",JSON.stringify(putDomesticTaxConsentExternalRepresentationResponse))
-    return consentTaxCreateResponse
-}
-
-async function putDomesticTaxConsentExternalRepresentationSpecialPart(config,body,enabledHeaders){
-    console.log(config)
-    console.log(body)
-    console.log(enabledHeaders)
-    let putDomesticTaxConsentExternalRepresentationSpecialPartResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/domesticTax",body,enabledHeaders)
-    console.log(JSON.stringify(putDomesticTaxConsentExternalRepresentationSpecialPartResponse))
-    await appendToDefinedFile("logs.txt","putDomesticTaxConsentExternalRepresentationSpecialPartResponse",JSON.stringify(putDomesticTaxConsentExternalRepresentationSpecialPartResponse))
-    return putDomesticTaxConsentExternalRepresentationSpecialPartResponse
+    return putDomesticTaxConsentExternalRepresentationResponse
 }
 
 async function putListAccountsConsentExternalRepresentation(config,body,enabledHeaders){
@@ -2182,16 +2211,6 @@ async function putListAccountsConsentExternalRepresentation(config,body,enabledH
     return putListAccountsConsentExternalRepresentationResponse
 }
 
-async function putListAccountsConsentExternalRepresentationSpecialPart(config,body,enabledHeaders){
-    console.log(config)
-    console.log(body)
-    console.log(enabledHeaders)
-    let putListAccountsConsentExternalRepresentationSpecialPartResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/listAccounts",body,enabledHeaders)
-    console.log(JSON.stringify(putListAccountsConsentExternalRepresentationSpecialPartResponse))
-    await appendToDefinedFile("logs.txt","putListAccountsConsentExternalRepresentationSpecialPartResponse",JSON.stringify(putListAccountsConsentExternalRepresentationSpecialPartResponse))
-    return putListAccountsConsentExternalRepresentatioSpecialPartnResponse
-}
-
 async function putListPassportsConsentExternalRepresentation(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
@@ -2200,16 +2219,6 @@ async function putListPassportsConsentExternalRepresentation(config,body,enabled
     console.log(JSON.stringify(putListPassportsConsentExternalRepresentationResponse))
     await appendToDefinedFile("logs.txt","putListPassportsConsentExternalRepresentationResponse",JSON.stringify(putListPassportsConsentExternalRepresentationResponse))
     return putListPassportsConsentExternalRepresentationResponse
-}
-
-async function putListPassportsConsentExternalRepresentationSpecialPart(config,body,enabledHeaders){
-    console.log(config)
-    console.log(body)
-    console.log(enabledHeaders)
-    let putListPassportsConsentExternalRepresentationSpecialPartResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/listPassports",body,enabledHeaders)
-    console.log(JSON.stringify(putListPassportsConsentExternalRepresentationSpecialPart))
-    await appendToDefinedFile("logs.txt","putListPassportsConsentExternalRepresentationSpecialPartResponse",JSON.stringify(putListPassportsConsentExternalRepresentationSpecialPartResponse))
-    return putListPassportsConsentExternalRepresentationSpecialPartResponse
 }
 
 async function putRequirementConsentExternalRepresentation(config,body,enabledHeaders){
@@ -2222,16 +2231,6 @@ async function putRequirementConsentExternalRepresentation(config,body,enabledHe
     return putRequirementConsentExternalRepresentationResponse
 }
 
-async function putRequirementConsentExternalRepresentationSpecialPart(config,body,enabledHeaders){
-    console.log(config)
-    console.log(body)
-    console.log(enabledHeaders)
-    let putRequirementConsentExternalRepresentationSpecialPartResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/requirement",body,enabledHeaders)
-    console.log(JSON.stringify(putRequirementConsentExternalRepresentationSpecialPartResponse))
-    await appendToDefinedFile("logs.txt","putRequirementConsentExternalRepresentationSpecialPartResponse",JSON.stringify(putRequirementConsentExternalRepresentationSpecialPartResponse))
-    return putRequirementConsentExternalRepresentationSpecialPartResponse
-}
-
 async function putTaxRequirementConsentExternalRepresentation(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
@@ -2242,14 +2241,111 @@ async function putTaxRequirementConsentExternalRepresentation(config,body,enable
     return putTaxRequirementConsentExternalRepresentationResponse
 }
 
-async function putTaxRequirementConsentExternalRepresentationSpecialPartResponse(config,body,enabledHeaders){
+async function putConsentSpecialPartExternalRepresentation(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
     console.log(enabledHeaders)
-    let putTaxRequirementConsentExternalRepresentationSpecialPartResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/taxRequirement",body,enabledHeaders)
-    console.log(JSON.stringify(putTaxRequirementConsentExternalRepresentationSpecialPartResponse))
-    await appendToDefinedFile("logs.txt","putTaxRequirementConsentExternalRepresentationSpecialPartResponse",JSON.stringify(putTaxRequirementConsentExternalRepresentationSpecialPartResponse))
-    return putTaxRequirementConsentExternalRepresentationSpecialPartResponse
+    let putConsentSpecialPartExternalRepresentationResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/createSpecialPartExternalRepresentation",body,enabledHeaders)
+    console.log(JSON.stringify(putConsentSpecialPartExternalRepresentationResponse))
+    await appendToDefinedFile("logs.txt","putConsentSpecialPartExternalRepresentationResponse",JSON.stringify(putConsentSpecialPartExternalRepresentationResponse))
+    return putConsentSpecialPartExternalRepresentationResponse
+}
+
+async function prepareExternalRepresentationBody(body,type){
+    let returnBody = body
+    if(type == "domestic"){
+        delete returnBody.data.account
+    }
+    if(type == "domesticTax"){
+        delete returnBody.data.account
+        delete returnBody.data.initiation.enclosedFile
+        delete returnBody.data.initiation.listAccounts
+        delete returnBody.data.initiation.listPassportData
+        delete returnBody.data.charge
+        returnBody = renameKeyInObject(returnBody,"paymentConsentId","domesticTaxConsentId")
+    }
+    if(type == "listAccounts"){
+        delete returnBody.data.account
+        delete returnBody.data.initiation.enclosedFile
+        delete returnBody.data.initiation.listPassportData
+        returnBody = renameKeyInObject(returnBody,"paymentConsentId","listAccountsConsentId")
+    }
+    if(type == "listPassports"){
+        delete returnBody.data.account
+        delete returnBody.data.initiation.enclosedFile
+        delete returnBody.data.initiation.regulatoryReporting
+        delete returnBody.data.initiation.listAccounts
+        returnBody = renameKeyInObject(returnBody,"paymentConsentId","listPassportsConsentId")
+    }
+    if(type == "requirement"){
+        delete accList.data.account
+        delete accList.data.initiation.enclosedFile
+        delete accList.data.initiation.listPassportData
+        delete accList.data.initiation.listAccounts
+        delete accList.data.charge
+        returnBody = renameKeyInObject(returnBody,"paymentConsentId","requirementConsentId")
+    }
+    if(type == "taxRequirement"){
+        delete accList.data.account
+        delete accList.data.initiation.enclosedFile
+        delete accList.data.initiation.listPassportData
+        delete accList.data.initiation.listAccounts
+        delete accList.data.charge
+        returnBody = renameKeyInObject(returnBody,"paymentConsentId","taxRequirementConsentId")
+    }
+    let sortedAccList = sortObjectAlphabetically(returnBody)
+    returnBody = sortedAccList
+    return returnBody
+}
+
+async function prepareExternalRepresentationSpecialPartBody(config,requestBodyWithExternalRepresentation){
+    debugger;
+    let imitIns = await createImitationInsert(config,requestBodyWithExternalRepresentation)
+    let specPartObject = await createSpecialPartObject(config,imitIns.ResultB64)
+    return specPartObject
+}
+
+async function preparePaymentsBody(type, reqConsent, resConsent){
+    let returnBody = {"data":{"initiation":{}}}
+    
+    // Map type to consentId field name
+    const consentIdFields = {
+        "domestic": "domesticConsentId",
+        "domesticTax": "domesticTaxConsentId",
+        "listAccounts": "listAccountsConsentId",
+        "listPassports": "listPassportsConsentId",
+        "requirement": "requirementConsentId",
+        "taxRequirement": "taxRequirementConsentId"
+    };
+    
+    const consentIdField = consentIdFields[type];
+    
+    // Добавляем consentId из ответа (унифицированная логика)
+    if (consentIdField && resConsent?.data?.[consentIdField]) {
+        returnBody.data[consentIdField] = resConsent.data[consentIdField];
+    }
+    
+    // Копируем initiation из тела запроса
+    if (reqConsent?.data?.initiation) {
+        returnBody.data.initiation = reqConsent.data.initiation;
+        returnBody.risk = reqConsent.risk;
+    }
+    
+    let sortedAccList = sortObjectAlphabetically(returnBody)
+    returnBody = sortedAccList
+    return returnBody
+}
+
+async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extReprSpecPart){
+    if(preparedAccList.data.paymentConsentId){
+        preparedAccList = renameKeyInObject(preparedAccList,"paymentConsentId","domesticConsentId")
+    }
+    let authorisationBody = preparedAccList
+    authorisationBody.data.externalRepresentation = extRepr.data.externalRepresentation
+    authorisationBody.specialPart = specPart.specialPart
+    authorisationBody.specialPart.externalRepresentationSpecialPart = extReprSpecPart.data.externalRepresentationSpecialPart
+    authorisationBody = sortObjectAlphabetically(authorisationBody)
+    return authorisationBody
 }
 
 async function main1() {
@@ -2515,11 +2611,12 @@ async function main1() {
 module.exports = {
     createTokenQPISP,createTokenTPE,createTokenPISP,createDboClientToken,
     abstractGETrequest, abstractDELETErequest,
-    postDomesticConsent,patchDomesticConsent,postDomesticPayment,
-    postDomesticTaxConsent,patchDomesticTaxConsent,postDomesticTaxPayment,
-    postListAccountsConsent,patchListAccountsConsent,postListAccountsPayment,
-    postListPassportsConsent,patchListPassportsConsent,postListPassportsPayment,
-    postRequirementConsent,patchRequirementConsent,postRequirementPayment,
-    postTaxRequirementConsent,patchTaxRequirementConsent,postTaxRequirementPayment,
+    postDomesticConsent,patchDomesticConsent,postDomesticPayment,putDomesticConsentExternalRepresentation,
+    postDomesticTaxConsent,patchDomesticTaxConsent,postDomesticTaxPayment,putDomesticTaxConsentExternalRepresentation,
+    postListAccountsConsent,patchListAccountsConsent,postListAccountsPayment,putListAccountsConsentExternalRepresentation,
+    postListPassportsConsent,patchListPassportsConsent,postListPassportsPayment,putListPassportsConsentExternalRepresentation,
+    postRequirementConsent,patchRequirementConsent,postRequirementPayment,putRequirementConsentExternalRepresentation,
+    postTaxRequirementConsent,patchTaxRequirementConsent,postTaxRequirementPayment,putTaxRequirementConsentExternalRepresentation,
     makePOSTrequest,
+    prepareExternalRepresentationBody,prepareExternalRepresentationSpecialPartBody,putConsentSpecialPartExternalRepresentation,prepareAuthorisationBody,preparePaymentsBody,
     getRequestBody,scCryptoHash,generateHeader,scCryptoSign,createImitationInsert,createSpecialPartObject,createExternalRepresentationSpecialPart,renameKeyInObject,createExternalRepresentation,generateRandomHex,getAccListPaymentsKEYCLOAKcheck,getAccListPaymentsKEYCLOAK}

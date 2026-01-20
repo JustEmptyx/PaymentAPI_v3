@@ -19,6 +19,9 @@
                     <div class="menu-item active" data-tab="functions">
                         <i class="icon">📋</i> Functions
                     </div>
+                    <div class="menu-item" data-tab="sequence">
+                        <i class="icon">🔄</i> Sequence
+                    </div>
                     <div class="menu-item" data-tab="config">
                         <i class="icon">⚙️</i> Configuration
                     </div>
@@ -123,6 +126,154 @@
                                 x-api-key
                             </label>
                             <input type="text" id="api-key" class="api-key-input" placeholder="API Key">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequence Tab -->
+            <div id="sequence-tab" class="tab-content">
+                <div class="sequence-container">
+                    <h2>Sequence Execution</h2>
+                    
+                    <!-- Payment Type Selection -->
+                    <div class="sequence-section">
+                        <h3>Payment Type</h3>
+                        <div class="radio-group" id="payment-type-group">
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="domestic">
+                                <span class="radio-mark"></span>
+                                domestic
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="domesticTax">
+                                <span class="radio-mark"></span>
+                                domesticTax
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="listAccounts">
+                                <span class="radio-mark"></span>
+                                listAccounts
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="listPassports">
+                                <span class="radio-mark"></span>
+                                listPassports
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="requirement">
+                                <span class="radio-mark"></span>
+                                requirement
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="taxRequirement">
+                                <span class="radio-mark"></span>
+                                taxRequirement
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Steps Selection -->
+                    <div class="sequence-section">
+                        <h3>Steps</h3>
+                        <div class="checkbox-group" id="steps-group">
+                            <div class="step-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="createConsent" id="createConsent">
+                                    <span class="checkmark"></span>
+                                    createConsent
+                                </label>
+                            </div>
+                            <div class="step-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="authoriseConsent" id="authoriseConsent">
+                                    <span class="checkmark"></span>
+                                    authoriseConsent
+                                </label>
+                            </div>
+                            <div class="step-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="createPayment" id="createPayment">
+                                    <span class="checkmark"></span>
+                                    createPayment
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Request Body -->
+                    <div class="sequence-section">
+                        <h3>Request Body</h3>
+                        <div class="sequence-actions">
+                            <button id="sequence-format-json" class="btn btn-outline">
+                                <i class="fas fa-indent"></i> Format JSON
+                            </button>
+                            <button id="sequence-execute" class="btn primary">
+                                <i class="icon">▶️</i> Execute Sequence
+                            </button>
+                        </div>
+                        <div class="editor-container">
+                            <textarea id="sequence-request-body" class="code-editor" placeholder="Request body (JSON)"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Sequence Headers Panel -->
+                    <div class="headers-panel">
+                        <div class="panel-header">
+                            <h3>Request Headers</h3>
+                        </div>
+                        <div class="headers-list" id="sequence-headers-list">
+                            <div class="header-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="seq-x-fapi-interaction-id" checked>
+                                    <span class="checkmark"></span>
+                                    x-fapi-interaction-id
+                                </label>
+                            </div>
+                            <div class="header-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="seq-x-fapi-customer-ip-address">
+                                    <span class="checkmark"></span>
+                                    x-fapi-customer-ip-address
+                                </label>
+                            </div>
+                            <div class="header-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="seq-x-fapi-auth-date">
+                                    <span class="checkmark"></span>
+                                    x-fapi-auth-date
+                                </label>
+                            </div>
+                            <div class="header-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="seq-x-idempotency-key" checked>
+                                    <span class="checkmark"></span>
+                                    x-idempotency-key
+                                </label>
+                            </div>
+                            <div class="header-item">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="seq-application/json" checked>
+                                    <span class="checkmark"></span>
+                                    Content-Type: application/json
+                                </label>
+                            </div>
+                            <div class="header-item api-key">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="seq-x-api-key" checked>
+                                    <span class="checkmark"></span>
+                                    x-api-key
+                                </label>
+                                <input type="text" id="sequence-api-key" class="api-key-input" placeholder="API Key">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Container -->
+                    <div class="sequence-section results-section">
+                        <h3>Results</h3>
+                        <div id="sequence-results" class="sequence-results">
+                            <div class="no-results">No results yet. Execute a sequence to see results here.</div>
                         </div>
                     </div>
                 </div>

@@ -225,6 +225,37 @@ async function getPayloadByMethodRouteNew(config, methodType,methodUrl,commonHea
             }
             break;
         case "PUT":
+            body.pars = {
+                "@method": "PUT",
+                "content-digest": commonHeaders["content-digest"],
+                "content-type": commonHeaders["content-type"],
+            }
+            switch(methodUrl){
+                case "/paymentConsents/createExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/createExternalRepresentation"
+                    break;
+                case "/paymentConsents/domesticTax/createExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domesticTax/createExternalRepresentation"
+                    break;
+                case "/paymentConsents/listAccounts/createExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/listAccounts/createExternalRepresentation"
+                    break;
+                case "/paymentConsents/listPassports/createExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/listPassports/createExternalRepresentation"
+                    break;
+                case "/paymentConsents/requirement/createExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/requirement/createExternalRepresentation"
+                    break;
+                case "/paymentConsents/taxRequirement/createExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/taxRequirement/createExternalRepresentation"
+                    break;
+                case "/paymentConsents/VRP/createExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/VRP/createExternalRepresentation"
+                    break;
+                case "/paymentConsents/createSpecialPartExternalRepresentation":
+                    body.pars['@target-uri'] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/createSpecialPartExternalRepresentation"
+                    break;
+            }
             break;
     }
     if (findAttribute(commonHeaders,"x-api-key")){
