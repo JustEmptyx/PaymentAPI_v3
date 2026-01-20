@@ -19,7 +19,7 @@ async function generateSignature(config,methodType,methodUri,commonHeaders,proje
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"2FDBB8753A0227648C27549D02F04ED4D5F3FDD7",
+            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
             "Password":"12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
