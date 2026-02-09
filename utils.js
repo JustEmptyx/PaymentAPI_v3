@@ -45,5 +45,7 @@ function getRequestBody(project,method){
     return body
 }
 
+const generateRandomHex = length =>
+    Array.from({ length }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
 
-module.exports = {sortObjectAlphabetically,getRequestBody,findAttribute}
+module.exports = {sortObjectAlphabetically,getRequestBody,findAttribute,generateRandomHex}

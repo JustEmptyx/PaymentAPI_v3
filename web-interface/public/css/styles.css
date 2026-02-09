@@ -773,3 +773,62 @@ body {
     color: #6b7280;
     border: 1px solid #e5e7eb;
 }
+
+/* Loading GIF */
+.loading-gif {
+    width: 24px;
+    height: 24px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.loading-gif.active {
+    display: inline-block !important;
+}
+
+.status-value.hidden {
+    display: none;
+}
+
+/* Sequence Loading */
+.sequence-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.sequence-loading .loading-gif {
+    width: 24px;
+    height: 24px;
+}
+
+/* Debtor Identification Section */
+.debtor-identification {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.debtor-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.debtor-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 10px;
+}
+
+.debtor-options .checkbox-container {
+    padding: 6px 12px;
+}
