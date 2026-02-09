@@ -7,11 +7,11 @@ const readline = require("readline-sync");
 const axios = require("axios");
 const {requestBody,setRequestBody} =  require('./requestBodies.js')
 const {appendToDefinedFile,createFile} = require('./fileManager')
-const {sortObjectAlphabetically,getRequestBody,findAttribute} = require('./utils')
+const {sortObjectAlphabetically,getRequestBody,findAttribute,generateRandomHex} = require('./utils')
 const {scCryptoSign,scCryptoHash} = require('./cryptoManager')
 const{convertToBase64, convertToBase64URL, convertBase64UrlToBase64, convertBase64ToBase64Url, decodeBase64, decodeBase64Url} = require('./base64converter')
 const fs = require("fs");
-const {unixDate,UnixDate,addYearsToDate,subtractYearsFromDate} = ('./dateModule')
+const {unixDate,UnixDate,addYearsToDate,subtractYearsFromDate} = require('./dateModule')
 const {format} = require("date-fns");
 const {getClientAssertion,createTokenWithClientAssertion} = require("./clientSecretJWTAuth")
 const {stringify} = require("uuid");
@@ -32,7 +32,9 @@ let defaultConfig = {
     apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f",
     client_otp: "asb123",
     mobile_number: "+375-255427989",
-    access_token: ""
+    access_token: "",
+    subjectKeyIdentifier: "8627DBC521A8F18A4CDDD8D396949CC333ED762E",
+    password: "12345678"
 };
 
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
@@ -66,11 +68,10 @@ async function createTokenQPISP(config){
   appendToDefinedFile("logs.txt","client_assertion",client_assertion.toString())
   let token = await createTokenWithClientAssertion(local_config,client_assertion)
   appendToDefinedFile("logs.txt","client_assertion_token!",JSON.stringify(token))
-  const result = await response.json();
-  if (result.access_token) {
+  if (token.access_token) {
     config.access_token = token.access_token;
   }
-  return result
+  return token
 }
 
 async function createTokenTPE(config){
@@ -78,12 +79,11 @@ async function createTokenTPE(config){
   let client_assertion = await getClientAssertion(local_config,false)
   appendToDefinedFile("logs.txt","client_assertion",client_assertion.toString())
   let token = await createTokenWithClientAssertion(local_config,client_assertion)
-  const result = await response.json();
-  if (result.access_token) {
+  if (token.access_token) {
     config.access_token = token.access_token;
   }
 
-  return result
+  return token
 }
 
 async function createDboClientToken(config = {}, body = {}, enabledHeaders = []) {
@@ -120,26 +120,6 @@ async function createDboClientToken(config = {}, body = {}, enabledHeaders = [])
         console.error('Error in createDboClientToken:', error);
         throw error;
     }
-}
-
-
-async function generateRequestPISPauthorisationCode(config,consent_id){
-    let header = {"alg":"BELTM256","typ":"JOSE"}
-    let body = {"alg":"BELTM256","client_id":"PISP2TEST","consent_id":"f00cf4bb-51ef-407cbc84-c71fc6bd33ec","magic_number":"+375-255427989","max_age":0,"redirect_uri":config.url_swagger+"oauth2-redirect.html","response_type":"code","scope":"SC-APPS payments openid"}
-    body.client_id = config.client_id_pisp
-    body.consent_id = consent_id
-    let cryptoHashBody = convertToBase64(convertToBase64URL(JSON.stringify(header))+"."+convertToBase64URL(JSON.stringify(body)))
-    let dataB64 = {
-        "Auth":{
-            "CryptoType":3,
-            "ConnectStr":"hash=1.2.112.0.2.0.34.101.31.53"
-        },
-        "DataB64" : cryptoHashBody,
-        "MACKeyB64" : convertToBase64(config.client_secret_pisp)
-    }
-    let res = await scCryptoHash(config,dataB64)
-
-    return convertToBase64URL(JSON.stringify(header))+"."+convertToBase64URL(JSON.stringify(body)) + "." + convertBase64ToBase64Url(res.ResultB64)
 }
 
 async function generateHeader(config, additionalInfo){
@@ -217,6 +197,7 @@ const si= require("./Signature");
 const dateModule = require('./dateModule.js');
 
 async function makePOSTrequest(config,projectName,projectUrl,requestBody,enabledHeaders = []){
+    debugger;
     let requestBodyName = "POSTbody"
     await appendToDefinedFile("logs.txt","received requestBody",JSON.stringify(requestBody))
     setRequestBody(projectName,requestBodyName,sortObjectAlphabetically(requestBody))
@@ -262,11 +243,20 @@ async function makePOSTrequest(config,projectName,projectUrl,requestBody,enabled
     } else {
         commonHeaders["authorization"] = "Bearer " + config["access_token"]
     }
+    if (enabledHeaders.includes("privateIdentification")){
+        commonHeaders["http://openbanking.asb.by/debtorIdentification"] = "privateIdentification"
+    }
+    if (enabledHeaders.includes("organisationIdentification")){
+        commonHeaders["http://openbanking.asb.by/debtorIdentification"] = "organisationIdentification"
+    } 
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
     let signature = await si.generateSignature(config,"POST",projectUrl,commonHeaders,projectName,requestBodyName)
     await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
     commonHeaders['x-jws-signature'] = signature
     console.log(JSON.stringify(signature))
+    if(commonHeaders["http://openbanking.asb.by/debtorIdentification"]){
+        delete commonHeaders["http://openbanking.asb.by/debtorIdentification"];
+    }
     await appendToDefinedFile("logs.txt","headersList",JSON.stringify(commonHeaders))
     console.log(JSON.stringify(commonHeaders))
   const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0" + projectUrl, {
@@ -692,7 +682,7 @@ async function createSpecialPartObject(config,imitIns){
           "signatureDateTime": updatedFormattedDate,
           "status": "Authorised",
           "statusUpdateDateTime": formattedDate,
-          "subjectKeyIdentifier": "8627DBC521A8F18A4CDDD8D396949CC333ED762E"
+          "subjectKeyIdentifier": config.subjectKeyIdentifier
         }
   }
 }
@@ -848,1158 +838,6 @@ async function createExternalRepresentationSpecialPart(config, requestBody){
     return response
 }
 
-async function generateSpecPart(config,requestBodyWithExternalRepresentation){
-    let imitIns = await createImitationInsert(config,requestBodyWithExternalRepresentation)
-    let specPart = await createSpecialPartObject(config,imitIns.ResultB64)
-    setRequestBody("pispAuth","PUTpaymentConsentsCreateExternalRepresentationSpecialPart",specPart)
-    let externalRepresentationSpecialPart = await createExternalRepresentationSpecialPart(config,specPart)
-    specPart.specialPart.externalRepresentationSpecialPart = externalRepresentationSpecialPart.data.externalRepresentationSpecialPart
-    return specPart
-}
-async function generatePaymentConsentAuthoriseBody(config,accList){
-    accList.data.initiation  = accList.data.initiation
-    if (!accList.data.initiation.debtor) {
-        accList.data.initiation.debtor = {
-            "name": "ОАО \"Клиент для Open API 2 ИД 217 УНП 100218304\"",
-            "countryOfResidence": "BY",
-            "countryNameOfResidence": "Республика Беларусь",
-            "organisationIdentification": [{
-                "code": "TXID",
-                "codeName": "Номер, присвоенный налоговым органом для идентификации организации (для РБ - УНП)",
-                "identification": "INN100218304",
-                "identificationStatusName": "Индивидуальный предприниматель"
-            }],
-            "postalAddress": {
-                "country": "BY",
-                "countrySubDivision": "МИНСК",
-                "districtName": "МИНСК",
-                "townName": "г. МИНСК",
-                "townLocationName": "5000000000",
-                "postCode": "220000",
-                "streetName": "ул. Такая-то",
-                "buildingNumber": "6",
-                "room": "13",
-                "addressLine": ["220000, Республика Беларусь, г. МИНСК, ул. Такая-то, д.6 кв. 13", "СОАТО 5000000000"]
-            },
-            "contactDetails": {
-                "name": "Тестовая Тест",
-                "phoneNumber": "+375-17123456789",
-                "mobileNumber": "+375-29123456789",
-                "faxNumber": "+375-17123456780",
-                "emailAddress": "V087_TEST1@V087_TEST1.info"
-            }
-        }
-    }
-    if(!accList.data.initiation.debtorAccount) {
-        accList.data.initiation.debtorAccount = {"schemeName":"BY.NBRB.IBAN","identification":"BY15AKBB30121554000000000010"}
-    }
-    if(!accList.data.initiation.debtorAgent) {
-        accList.data.initiation.debtorAgent = {"identification": "AKBBBY2X", "name": "ОАО 'АСБ Беларусбанк'"}
-    }
-    if(!accList.data.initiation.creditorAgent) {
-        accList.data.initiation.creditorAgent = {"identification": "AKBBBY2X", "name": "ОАО 'АСБ Беларусбанк'"}
-    }
-    if(!accList.data.initiation.remittanceInformation) {
-        accList.data.initiation.remittanceInformation = {
-            "categoryPurposeCode": "OTHR",
-            "proprietaryPurpose": "190401.21",
-            "referredDocument": [],
-            "unstructured": "1Назначение платежа в неструктурированной виде длиной 140 символов 12Назначение платежа в неструктурированной виде длиной 140 символов 23Назначение платежа в неструктурированной виде длиной 140 символов 3"
-        }
-    }
-    delete accList.data.account
-    // accList.data.account = "6.00"
-    // accList.data.statusUpdateDateTime = accList.data.statusUpdateDateTime.split('+')[0]
-    // accList.data.creationDateTime = accList.data.creationDateTime.split('+')[0]
-    let sortedAccList = sortObjectAlphabetically(accList)
-    let requestBody = sortedAccList
-    setRequestBody("pispAuth","PUTpaymentConsentsCreateExternalRepresentation",requestBody)
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let externalRepresentation = await createExternalRepresentation(config, requestBody)
-    requestBody.data.externalRepresentation = externalRepresentation.data.externalRepresentation
-    requestBody = sortObjectAlphabetically(requestBody)
-    let specPart = await generateSpecPart(config, requestBody)
-    requestBody.specialPart = specPart.specialPart
-    requestBody = renameKeyInObject(requestBody,"paymentConsentId","domesticConsentId")
-    requestBody = sortObjectAlphabetically(requestBody)
-    return requestBody
-}
-// -------------------------------------------------------------
-// =============================================================
-// -------------------------------------------------------------
-
-async function createPaymentInstantConsent(config,access_token){
-    let requestBodyName = "paymentConsents/instant1"
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = sortObjectAlphabetically(getRequestBody("qpispAuth",requestBodyName))
-    // let requestBody = getRequestBody("pispAuth",requestBodyName)
-    await appendToDefinedFile("logs.txt","requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": convertToBase64(JSON.stringify(requestBody))
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "paymentConsents/instant"
-    let signature = await generateSignatureQPISP(config,method,access_token,fapiInteractionId,idempotencyKey,false, requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/instant", {
-    // const response = await fetch("http://192.168.166.213:9100/openbanking/paymentConsents/instant",{
-    method: "POST",
-    mode: "cors",
-    headers: headersList,
-    body: JSON.stringify(sortObjectAlphabetically(getRequestBody("qpispAuth",requestBodyName)))
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: POST \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify(getRequestBody("qpispAuth",requestBodyName)))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-  response.headers.forEach((value, name) => {
-      console.log(`${name}: ${value}`);
-  });
-    return response.json();
-}
-
-async function postPaymentsInstant(config,access_token){
-    let requestBodyName = "POSTpayments/instant1"
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = sortObjectAlphabeticallyOld(getRequestBody("qpispAuth",requestBodyName))
-    // let requestBody = getRequestBody("pispAuth",requestBodyName)
-    await appendToDefinedFile("logs.txt","requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": convertToBase64(JSON.stringify(requestBody))
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "payments/instant"
-    let signature = await generateSignaturePaymentsInstant(config,method,access_token,fapiInteractionId,idempotencyKey,false, requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/payments/instant", {
-    method: "POST",
-    mode: "cors",
-    headers: headersList,
-    body: JSON.stringify(sortObjectAlphabeticallyOld(getRequestBody("qpispAuth",requestBodyName)))
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: POST \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify(sortObjectAlphabetically(getRequestBody("qpispAuth",requestBodyName))))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-    return response.json();
-}
-
-async function createPaymentInstantInvoice(config,access_token){
-    let requestBodyName = "paymentInstant/invoice1"
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = sortObjectAlphabetically(getRequestBody("tpeAuth",requestBodyName))
-    // let requestBody = getRequestBody("pispAuth",requestBodyName)
-    await appendToDefinedFile("logs.txt","requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": convertToBase64(JSON.stringify(requestBody))
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "POSTpaymentInstant/invoice"
-    let signature = await generateSignaturePOSTinstantInvoice(config,method,access_token,fapiInteractionId,idempotencyKey,false, requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/invoices/instant", {
-    method: "POST",
-    mode: "cors",
-    headers: headersList,
-    body: JSON.stringify(sortObjectAlphabetically(getRequestBody("tpeAuth",requestBodyName)))
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: POST \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify(getRequestBody("tpeAuth",requestBodyName)))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-    return response.json();
-}
-
-async function patchPaymentInstantInvoice(config,access_token){
-    let requestBodyName = "PATCHpaymentInstant/invoice1"
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = sortObjectAlphabetically(getRequestBody("tpeAuth",requestBodyName))
-    // let requestBody = getRequestBody("pispAuth",requestBodyName)
-    await appendToDefinedFile("logs.txt","requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": convertToBase64(JSON.stringify(requestBody))
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "PATCHpaymentInstant/invoice"
-    let signature = await generateSignaturePATCHinstantInvoice(config,method,access_token,fapiInteractionId,idempotencyKey,false, requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/invoices/instant", {
-    method: "PATCH",
-    mode: "cors",
-    headers: headersList,
-    body: JSON.stringify(sortObjectAlphabetically(getRequestBody("tpeAuth",requestBodyName)))
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: POST \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify(sortObjectAlphabetically(getRequestBody("tpeAuth",requestBodyName))))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-  response.headers.forEach((value, name) => {
-      console.log(`${name}: ${value}`);
-  });
-    return response.json();
-}
-
-async function generateURLforPatchPaymentConsentInstant(config,access_token,ASPSPsession_id){
-    config.ASPSPsession = ASPSPsession_id
-    config.QPISPsession = "2715eb91-f1f8-4ed0-818d2ae1d2b9e76e"
-
-    let requestBodyName = "GETUrlPatchPaymentsConsentInstant1"
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "GETUrlPatchPaymentsConsentInstant"
-    let signature = await generateSignatureURLforPatchPaymentConsentInstant(config,method,access_token,fapiInteractionId,idempotencyKey,false, requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    authType = latestAuthType
-    let getRequestStringObject = config.url_swagger + "instantAuth?ASPSPsession="+config.ASPSPsession+"&QPISPsession="+encodeURIComponent(config.url_swagger+"instantPSUredirect?session="+config.QPISPsession)+"&jws_signature="+signature
-    console.log(getRequestStringObject)
-    await appendToDefinedFile("logs.txt","getRequestStringObject",getRequestStringObject)
-    return getRequestStringObject;
-}
-
-async function deletePaymentInstantConsent(config,access_token,instantConsentId){
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = ""
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "DELETEpaymentConsents/instant"
-    let signature = await generateSignatureQPISPdeletePaymentConsentInstant(config,method,access_token,fapiInteractionId,idempotencyKey,instantConsentId,["NoIdempotencyKey"])
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/instant/"+instantConsentId, {
-    method: "DELETE",
-    mode: "cors",
-    headers: headersList
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: DELETE \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify("NO BODY FOR DELETE METHOD"))
-  const errorText = await response.text(); // Получаем текст ответа
-    console.error("Error response:", errorText);
-}
-
-async function getStatusPaymentInstantConsent(config,access_token,instantConsentId){
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = ""
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "GETpaymentConsents/instant"
-    let signature = await generateSignatureQPISPgetStatusPaymentConsentInstant(config,method,access_token,fapiInteractionId,idempotencyKey,instantConsentId,["NoIdempotencyKey"])
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/instant/"+instantConsentId, {
-    method: "GET",
-    mode: "cors",
-    headers: headersList
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: GETstatusPaymentInstantConsent \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify("NO BODY FOR GET METHOD"))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-    return response.json();
-}
-
-async function getPaymentsInstant(config,access_token,instantId){
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = ""
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "GETpaymentsInstant"
-    let signature = await generateSignatureQPISPgetPaymentsInstant(config,method,access_token,fapiInteractionId,idempotencyKey,instantId,["NoIdempotencyKey","instantConsentId"])
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      "x-consentId":"7c4f5db9-b672-4c03ba98-07d055352864",
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-api-key': config.apikey,
-      "x-consentId":"7c4f5db9-b672-4c03ba98-07d055352864",
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      "x-idempotency-key": idempotencyKey,
-      "x-jws-signature": signature,
-      "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/payments/instant/"+instantId, {
-    method: "GET",
-    mode: "cors",
-    headers: headersList
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: GETPaymentsInstant \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify("NO BODY FOR GET METHOD"))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-    return response.json();
-}
-
-async function getBalancesPaymentInstantConsent(config,access_token,instantConsentId){
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = ""
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "GETpaymentConsents/instant/balances"
-    let signature = await generateSignatureQPISPgetBalancesPaymentConsentInstant(config,method,access_token,fapiInteractionId,idempotencyKey,instantConsentId,["NoIdempotencyKey"])
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      'x-accountConsentId':instantConsentId,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      // "x-jws-signature": signature,
-      // "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-accountConsentId':instantConsentId,
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      // "x-idempotency-key": idempotencyKey,
-      // "x-jws-signature": signature,
-      // "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/balances", {
-    method: "GET",
-    mode: "cors",
-    headers: headersList
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: DELETE \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify("NO BODY FOR GET METHOD"))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-    return response.json();
-}
-
-async function getAccountsPaymentInstantConsent(config,access_token,instantConsentId){
-    let latestAuthType = authType;
-    authType = "OBclientCredentials"
-    let requestBody = ""
-    let cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let fapiInteractionId = uuid.v4()
-    let idempotencyKey = uuid.v4()
-    let method = "GETpaymentConsents/instant/accounts"
-    let signature = await generateSignatureQPISPgetAccountsPaymentConsentInstant(config,method,access_token,fapiInteractionId,idempotencyKey,instantConsentId,["NoIdempotencyKey"])
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    console.log(JSON.stringify(signature))
-    let headersList = authType == 'OBclientCredentials' ? {
-      'accept': 'application/json;charset=utf-8',
-      'Authorization': 'Bearer '+ access_token,
-      'Accept-Language': 'ru',
-      'x-accountConsentId':instantConsentId,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      // "x-jws-signature": signature,
-      // "content-digest": "belt-hash256=:"+ hmac +":",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    } : {
-      "Content-Type": "application/json;charset=utf-8",
-      'accept': 'application/json;charset=utf-8',
-      'Accept-Language': 'ru',
-      'x-accountConsentId':instantConsentId,
-      'x-api-key': config.apikey,
-      "x-fapi-auth-date": unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(600)),
-      "x-fapi-customer-ip-address": "192.168.247.72",
-      "x-fapi-interaction-id": fapiInteractionId,
-      // "x-idempotency-key": idempotencyKey,
-      // "x-jws-signature": signature,
-      // "content-digest": "belt-hash256=:"+ hmac +":",
-      // "content-digest": "belt-hash256=:FE5PPAAEcWQ8DqOrZPW2sBiCKg1LjXIFaAN+JWey1oQw=:",
-      "x-customer-user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    }
-    await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-    console.log(JSON.stringify(headersList))
-    const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0/accounts", {
-    method: "GET",
-    mode: "cors",
-    headers: headersList
-  });
-    authType = latestAuthType
-  await appendToDefinedFile("logs.txt","fullRequest","method: GET /accounts \r\n mode: cors \r\n headers: " + JSON.stringify(headersList) + "\r\n" + "body: " + JSON.stringify("NO BODY FOR GET METHOD"))
-  // const errorText = await response.text(); // Получаем текст ответа
-  //   console.error("Error response:", errorText);
-    return response.json();
-}
-
-async function generateSignatureQPISP(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "content-type",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-      "x-idempotency-key"
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"paymentConsents/instant1",instantConsentId,"qpispAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignaturePaymentsInstant(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "content-type",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-      "x-idempotency-key"
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    // let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"POSTpayments/instant1",instantConsentId,"qpispAuth")
-    let payload = await generatePayloadNoSort(config,method,token,fapiInteractionId,idempotencyKey,"POSTpayments/instant1",instantConsentId,"qpispAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignaturePOSTinstantInvoice(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "content-type",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-      "x-idempotency-key"
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"paymentInstant/invoice1",instantConsentId,"tpeAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignaturePATCHinstantInvoice(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "content-type",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-      "x-idempotency-key"
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"PATCHpaymentInstant/invoice1",instantConsentId,"tpeAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignatureURLforPatchPaymentConsentInstant(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,requestBodyName,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@authority",
-      "@path",
-      "@query-param;name=ASPSPsession",
-      "@query-param;name=QPISPsession",
-      "@scheme"
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,requestBodyName,instantConsentId,"qpispAuth")
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignatureQPISPdeletePaymentConsentInstant(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id"
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"DELETEpaymentConsents/instant1",instantConsentId,"qpispAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignatureQPISPgetStatusPaymentConsentInstant(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"GETpaymentConsents/instant1",instantConsentId,"qpispAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignatureQPISPgetPaymentsInstant(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "x-consentId",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"GETpayments/instant1",instantConsentId,"qpispAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignatureQPISPgetBalancesPaymentConsentInstant(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"GETpaymentConsents/instant/balances",instantConsentId,"qpispAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-async function generateSignatureQPISPgetAccountsPaymentConsentInstant(config,method,token,fapiInteractionId,idempotencyKey,instantConsentId,additionalInfo = []){
-    let header = await generateHeader(config,additionalInfo)
-    header["http://openbanking.asb.by/signedData"].pars = [
-      "@method",
-      "@target-uri",
-      "authorization",
-      "content-digest",
-      "x-fapi-auth-date",
-      "x-fapi-customer-ip-address",
-      "x-fapi-interaction-id",
-    ]
-    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
-    console.log("Header \r\n" +JSON.stringify(header))
-    let payload = await generatePayload(config,method,token,fapiInteractionId,idempotencyKey,"GETpaymentConsents/instant/accounts",instantConsentId,"qpispAuth")
-    // payload["pars"]["@target-uri"] = config.url_swagger + "oapi-channel/open-banking/v1.0/paymentConsents/domestic/"+domesticConsentId+"/PSUorPAU/V087_TEST1"
-    await appendToDefinedFile("logs.txt","payloadPars",JSON.stringify(payload))
-    console.log("Payload \r\n" +JSON.stringify(payload))
-    let headerB64 = convertToBase64URL(JSON.stringify(header))
-    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
-    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
-    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
-    let signBody = {
-        "Auth":{
-            "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
-        },
-        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
-        "OptAddAllCert":false,
-        "OptAddCert":true,
-        "OptCheckPrivateKey":true,
-        "OptReturnSignCert":true
-    }
-    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
-    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
-    let hash = await scCryptoSign(config,signBody)
-    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
-    console.log("signedData" + JSON.stringify(hash))
-    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
-
-    return signature
-}
-
-const generateRandomHex = length =>
-    Array.from({ length }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
-
-async function modifyPATCHpaymentInvoiceBody(uri_paymentLink,instantConsentId,invoiceInstantId,instructionIdentification,endToEndIdentification){
-    let body = await getRequestBody("tpeAuth","PATCHpaymentInstant/invoice1")
-    body.data.paymentLink[0]["URI"] = uri_paymentLink
-    body.data.instantConsentId = instantConsentId
-    body.data.invoiceInstantId = invoiceInstantId
-    body.data.modification.paymentEndToEndIdentification = "01." + unixDate.getShortedDate() + "." + generateRandomHex(16)
-    body.data.modification.paymentInstructionIdentification = "795SDBO" + unixDate.getShortedDate() + generateRandomHex(16)
-    body.data.modification.modificationIdentification = "795SPPU" + unixDate.getShortedDate() + generateRandomHex(16)
-    await appendToDefinedFile("logs.txt","patchInstantInvoice_modifiedBody",JSON.stringify(body))
-    await setRequestBody("tpeAuth","PATCHpaymentInstant/invoice1",body)
-}
-
-async function modifyPOSTpaymentsInstant(instantConsentId, instructionIdentification, endToEndIdentification,initiation,instruction){
-    let body = await getRequestBody("qpispAuth","POSTpayments/instant1")
-    body.data.instantConsentId = instantConsentId
-    body.data.instruction = instruction
-    body.data.initiation = initiation
-    body.data.instruction.remittanceInformation.referredDocument.forEach(item => {
-        delete item.lineDetails;
-    });
-    delete body.data.instruction.paymentEndToEndIdentification
-    delete body.data.instruction.paymentInstructionIdentification
-    delete body.data.instruction.debtor
-    delete body.data.instruction.debtorAgent
-    delete body.data.instruction.instantPaymentType
-    body.data.initiation.localInstrument = body.data.instruction.localInstrument
-    delete body.data.instruction.localInstrument
-    delete body.data.instruction.modificationIdentification
-    body.data.instruction.instructionIdentification = instructionIdentification
-    body.data.instruction.endToEndIdentification = endToEndIdentification
-    delete body.data.instruction.debtorAccount
-
-    await appendToDefinedFile("logs.txt","POSTpaymentsinstant_modifiedBody",JSON.stringify(body))
-    await setRequestBody("qpispAuth","POSTpayments/instant1",body)
-}
-
-async function modifyPostPaymentsDomesticDomesticIdBody(domesticConsentId,initiation){
-    let body = await getRequestBody("pispAuth","payments/domestic")
-    body.data.domesticConsentId = domesticConsentId
-    body.data.initiation = initiation
-    // delete body.data.initiation.debtor
-    await appendToDefinedFile("logs.txt","POSTpaymentsinstant_modifiedBody",JSON.stringify(body))
-    await setRequestBody("pispAuth","payments/domestic",body)
-}
 
 async function abstractGETrequest(config,body,enabledHeaders){
     console.log(config)
@@ -2218,6 +1056,36 @@ async function postTaxRequirementPayment(config,body,enabledHeaders){
     return postTaxRequirementPaymentResponse
 }
 
+async function postVRPConsent(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let postVRPConsentResponse = await makePOSTrequest(config, "pispAuth","/paymentConsents/VRP",body,enabledHeaders)
+    console.log(JSON.stringify(postVRPConsentResponse))
+    await appendToDefinedFile("logs.txt","postVRPConsentResponse_response",JSON.stringify(postVRPConsentResponse))
+    return postVRPConsentResponse
+}
+
+async function patchVRPConsent(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let patchVRPConsentResponse = await makePATCHrequest(config, "pispAuth","/paymentConsents/VRP",body,enabledHeaders)
+    console.log(JSON.stringify(patchVRPConsentResponse))
+    await appendToDefinedFile("logs.txt","patchVRPConsent_response",JSON.stringify(patchVRPConsentResponse))
+    return patchVRPConsentResponse
+}
+
+async function postVRPPayment(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let postVRPPaymentResponse = await makePOSTrequest(config, "pispAuth","/payments/VRP",body,enabledHeaders)
+    console.log(JSON.stringify(postVRPPaymentResponse))
+    await appendToDefinedFile("logs.txt","postRequirementPayment_response",JSON.stringify(postVRPPaymentResponse))
+    return postVRPPaymentResponse
+}
+
 async function putDomesticConsentExternalRepresentation(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
@@ -2278,6 +1146,16 @@ async function putTaxRequirementConsentExternalRepresentation(config,body,enable
     return putTaxRequirementConsentExternalRepresentationResponse
 }
 
+async function putVRPConsentExternalRepresentation(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let putVRPConsentExternalRepresentationResponse = await makePUTrequest(config, "pispAuth","/paymentConsents/VRP/createExternalRepresentation",body,enabledHeaders)
+    console.log(JSON.stringify(putVRPConsentExternalRepresentationResponse))
+    await appendToDefinedFile("logs.txt","putVRPConsentExternalRepresentationResponse",JSON.stringify(putVRPConsentExternalRepresentationResponse))
+    return putVRPConsentExternalRepresentationResponse
+}
+
 async function putConsentSpecialPartExternalRepresentation(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
@@ -2315,20 +1193,27 @@ async function prepareExternalRepresentationBody(body,type){
         returnBody = renameKeyInObject(returnBody,"paymentConsentId","listPassportsConsentId")
     }
     if(type == "requirement"){
-        delete accList.data.account
-        delete accList.data.initiation.enclosedFile
-        delete accList.data.initiation.listPassportData
-        delete accList.data.initiation.listAccounts
-        delete accList.data.charge
+        delete returnBody.data.account
+        delete returnBody.data.initiation.listPassportData
+        delete returnBody.data.initiation.listAccounts
+        delete returnBody.data.initiation.regulatoryReporting
         returnBody = renameKeyInObject(returnBody,"paymentConsentId","requirementConsentId")
     }
     if(type == "taxRequirement"){
-        delete accList.data.account
-        delete accList.data.initiation.enclosedFile
-        delete accList.data.initiation.listPassportData
-        delete accList.data.initiation.listAccounts
-        delete accList.data.charge
+        delete returnBody.data.account
+        delete returnBody.data.initiation.listPassportData
+        delete returnBody.data.initiation.listAccounts
+        delete returnBody.data.charge
         returnBody = renameKeyInObject(returnBody,"paymentConsentId","taxRequirementConsentId")
+    }
+    if(type == "VRP"){
+        delete returnBody.data.account
+        delete returnBody.data.initiation.enclosedFile
+        delete returnBody.data.initiation.listAccounts
+        delete returnBody.data.initiation.listPassportData
+        delete returnBody.data.initiation.regulatoryReporting
+        delete returnBody.data.charge
+        returnBody = renameKeyInObject(returnBody,"paymentConsentId","VRPConsentId")
     }
     let sortedAccList = sortObjectAlphabetically(returnBody)
     returnBody = sortedAccList
@@ -2343,7 +1228,9 @@ async function prepareExternalRepresentationSpecialPartBody(config,requestBodyWi
 }
 
 async function preparePaymentsBody(type, reqConsent, resConsent){
+    debugger;
     let returnBody = {"data":{"initiation":{}}}
+    let unixDate = dateModule.unixDate
     
     // Map type to consentId field name
     const consentIdFields = {
@@ -2352,7 +1239,8 @@ async function preparePaymentsBody(type, reqConsent, resConsent){
         "listAccounts": "listAccountsConsentId",
         "listPassports": "listPassportsConsentId",
         "requirement": "requirementConsentId",
-        "taxRequirement": "taxRequirementConsentId"
+        "taxRequirement": "taxRequirementConsentId",
+        "VRP": "VRPConsentId"
     };
     
     const consentIdField = consentIdFields[type];
@@ -2368,12 +1256,30 @@ async function preparePaymentsBody(type, reqConsent, resConsent){
         returnBody.risk = reqConsent.risk;
     }
     
+    if (type === "VRP" && reqConsent?.data?.initiation) {
+        const { initiation } = reqConsent.data;
+        const date = unixDate.getShortedDate(unixDate.getCurrentDate());
+        const randomHex = generateRandomHex(16);
+    
+        returnBody.data.instruction = {
+            instructionIdentification: `795SDBO${date}${randomHex}`,
+            endToEndIdentification: `01.${date}.${randomHex}`,
+        localInstrument: initiation.localInstrument,
+            amount: initiation.amount ?? "10.00",
+            currency: initiation.currency ?? "BYN",
+            remittanceInformation: initiation.remittanceInformation,
+            ...(initiation.creditor && { creditor: initiation.creditor }),
+            ...(initiation.creditorAccount && { creditorAccount: initiation.creditorAccount }),
+            ...(initiation.creditorAgent && { creditorAgent: initiation.creditorAgent })
+        };
+    }
+
     let sortedAccList = sortObjectAlphabetically(returnBody)
     returnBody = sortedAccList
     return returnBody
 }
 
-async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extReprSpecPart){
+async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extReprSpecPart,type){
     if(preparedAccList.data.paymentConsentId){
         preparedAccList = renameKeyInObject(preparedAccList,"paymentConsentId","domesticConsentId")
     }
@@ -2381,270 +1287,12 @@ async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extRepr
     authorisationBody.data.externalRepresentation = extRepr.data.externalRepresentation
     authorisationBody.specialPart = specPart.specialPart
     authorisationBody.specialPart.externalRepresentationSpecialPart = extReprSpecPart.data.externalRepresentationSpecialPart
+    
+    
     authorisationBody = sortObjectAlphabetically(authorisationBody)
     return authorisationBody
 }
 
-async function main1() {
-    // const config = {
-    //     alg: "BELTM256",
-    //     typ: "JOSE",
-    //     url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
-    //     url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
-    //     client_id_pisp: "PISP2TEST",
-    //     client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
-    //     client_id_qpisp: "BELKARTPAY_NPC_TEST",
-    //     client_secret_qpisp: "aES5biV0eWVkVWUHzD36it5X2yE7DSkF",
-    //     client_id_tpe: "ENTERPRISESOFT",
-    //     client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
-    //     client_id_dbo:"digitalChannels",
-    //     client_secret_dbo:"rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
-    //     apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f", //V087_TEST1
-    //     // apikey: "ed999501-fe4e-4f18-845e-d69eab692941", //test.client-12
-    //     client_otp: "asb123",
-    //     mobile_number: "+375-255427989"
-    // }
-
-    // const config = {
-    //     alg: "BELTM256",
-    //     typ: "JOSE",
-    //     url_kc: "https://api-test.asb.by/",
-    //     url_swagger: "https://api-test.asb.by/",
-    //     client_id_pisp: "PISP2TEST",
-    //     client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
-    //     client_id_qpisp: "ERIP_ID_TEST",
-    //     client_secret_qpisp: "HXA2WCWmIpbYNghWkD7KFSsDPbdUz1dI",
-    //     client_id_tpe: "ENTERPRISESOFT",
-    //     client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
-    //     client_id_dbo:"digitalChannels",
-    //     client_secret_dbo:"rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
-    //     apikey: "c0bf747d-3cb0-41af-ae87-08d062517c9b", //V087_TEST1
-    //     // apikey: "ed999501-fe4e-4f18-845e-d69eab692941", //test.client-12
-    //     client_otp: "asb123",
-    //     mobile_number: "+375-255427989"
-    // }
-
-    // const config = {
-    //     alg: "BELTM256",
-    //     typ: "JOSE",
-    //     url_kc: "https://open-banking-akbb.softclub.by/",
-    //     url_swagger: "https://open-banking-akbb.softclub.by/",
-    //     // url_swagger:"192.168.166.122:10081/",
-    //     client_id_pisp: "PISPTEST",
-    //     client_secret_pisp: "P9XzSwdBkRw17nu1V2CSM3eogszWC0XQ",
-    //     client_id_qpisp: "BELKARTPAY_NPC_TEST",
-    //     client_secret_qpisp: "veZxbezDPxbOw4l0RIzfCO7TDNALvHUV",
-    //     client_id_dbo: "digitalChannelsNew",
-    //     client_secret_dbo: "mnoSdqcDruzrrBqev06ZLkHOGE3xRayy",
-    //     client_id_tpe: "ENTERPRISESOFT",
-    //     client_secret_tpe: "VUpshCxrbwRlCbTFDFpQhOUh78zeUPlU",
-    //     apikey: "Q3ET50eu0IgFQojiBn1M5Ypw5eRuuS90O5fhYSXMWcDFTWdtVt", //V087_TEST1
-    //     // apikey: "5bcda088-5cdb-4f98-8cc6-b1c42eb19c39", //V087_TEST1
-    //     client_otp: "asb123",
-    //     mobile_number: "+375-255427989"
-    // }
-
-    const config2 = {
-        alg: "BELTM256",
-        typ: "JOSE",
-        url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
-        url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
-        client_id: "PISP2TEST",
-        client_secret: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
-        apikey: "767acbb6-4985-4a02-9230-8f9f5fefc01f" //V087_TEST1
-    }
-    await createFile("logs.txt",unixDate.getFormattedDate(unixDate.getDateNsecondsAgo(1)),)
-    let pispAccessToken
-    let pispToken = await createTokenPISP(config)
-    pispAccessToken = pispToken.access_token
-    let qpispAccessToken
-    let qpispToken = await createTokenQPISP(config)
-    qpispAccessToken = qpispToken.access_token
-    await appendToDefinedFile("logs.txt", "QPISPaccessToken", JSON.stringify(qpispAccessToken))
-    let tpeAccessToken
-    let tpeToken = await createTokenTPE(config)
-    tpeAccessToken = tpeToken.access_token
-    await appendToDefinedFile("logs.txt", "TPEaccessToken", JSON.stringify(tpeAccessToken))
-    let dboClientAccessToken
-    let dboClientToken = await createDboClientToken(config)
-    dboClientAccessToken = dboClientToken.access_token
-    await appendToDefinedFile("logs.txt","PISPtoken",pispAccessToken.toString())
-    console.log(pispToken)
-    console.log("pisp_access_token : "+pispAccessToken)
-
-    // if (fs.existsSync("./latestInstantConsent.txt")){
-    //     let latestPaymentConsent = fs.readFileSync("./latestInstantConsent.txt","utf8")
-    //     let deletedPaymentInstantConsent = await deletePaymentInstantConsent(config, qpispAccessToken, latestPaymentConsent)
-    // }
-    // let paymentInstantConsent = await createPaymentInstantConsent(config,qpispAccessToken)
-    // console.log(JSON.stringify(paymentInstantConsent))
-    // await appendToDefinedFile("logs.txt","instantConsentCreate_response",JSON.stringify(paymentInstantConsent))
-    // await createFile("latestInstantConsent.txt", paymentInstantConsent.data.instantConsentId)
-
-    // let paymentInstantConsent = {"data":{"ASPSPsession":"b2fe0533-6c4e-4739-800459d83b2cd8ae","QAPdata":{"authentication":{"authenticationMethod":"BY.QAP.AUTH.IDCARD","authenticationProvider":"IIS"},"debtor":{"organisationIdentification":[],"privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]}},"controlParameters":{"currency":"BYN","instantPaymentTypes":["rtp_qr"],"localInstrument":["BY.NBRB.RTP.QR"],"periodicLimits":[]},"creationDateTime":"2025-12-05T17:52:59+03:00","initiation":{"debtor":{"countryOfResidence":"BY","name":"Митрофан Доромидонтович Белуга","privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"}},"instantConsentId":"f988e9ac-acf8-417da25a-d0d88904e0b8","link":"https://sc-map-testversion-vip.softclub.by:8008/instantAuth?ASPSPsession=b2fe0533-6c4e-4739-800459d83b2cd8ae","status":"AwaitingAuthorisation","statusUpdateDateTime":"2025-12-05T17:52:59+03:00"},"links":{"self":"https://sc-map-testversion-vip.softclub.by:8008/paymentConsents/instant/f988e9ac-acf8-417da25a-d0d88904e0b8"},"meta":{"totalPages":1},"risk":{"postalAddress":{"addressLine":[],"country":"BY"}}}
-    // let paymentInstantConsent = {"data":{"ASPSPsession":"3703820c-2448-4dc0-b2ac213d41acf523","QAPdata":{"authentication":{"authenticationMethod":"BY.QAP.AUTH.IDCARD","authenticationProvider":"IIS"},"debtor":{"organisationIdentification":[],"privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]}},"controlParameters":{"currency":"BYN","instantPaymentTypes":["rtp_qr"],"localInstrument":["BY.NBRB.RTP.QR"],"periodicLimits":[]},"creationDateTime":"2025-10-06T11:35:09+03:00","initiation":{"debtor":{"countryOfResidence":"BY","name":"Митрофан Доромидонтович Белуга","privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"}},"instantConsentId":"520abad8-d49e-43319919-d34e85d83e39","link":"https://sc-map-testversion-vip.softclub.by:8008/instantAuth?ASPSPsession=3703820c-2448-4dc0-b2ac213d41acf523","status":"AwaitingAuthorisation","statusUpdateDateTime":"2025-10-06T11:35:09+03:00"},"links":{"self":"https://sc-map-testversion-vip.softclub.by:8008/paymentConsents/instant/520abad8-d49e-43319919-d34e85d83e39"},"meta":{"totalPages":1},"risk":{"postalAddress":{"addressLine":[],"country":"BY"}}}
-
-    // let paymentInstantConsent = {data:{instantConsentId:"6355d816-af36-4407aa5d-8508a43ce834"}} //asb
-    // let paymentInstantConsent ={"data":{"ASPSPsession":"06c420f0-e45d-4ec4-beb8b73d277c0257","QAPdata":{"authentication":{"authenticationMethod":"BY.QAP.AUTH.IDCARD","authenticationProvider":"IIS"},"debtor":{"organisationIdentification":[],"privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]}},"QPISPsession":"2715eb91-f1f8-4ed0-818d2ae1d2b9e76e","controlParameters":{"currency":"BYN","instantPaymentTypes":["rtp_qr"],"localInstrument":["BY.NBRB.RTP.QR"],"periodicLimits":[]},"creationDateTime":"2025-09-24T13:18:19+03:00","initiation":{"debtor":{"countryOfResidence":"BY","name":"Митрофан Доромидонтович Белуга","privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"}},"instantConsentId":"6355d816-af36-4407aa5d-8508a43ce834","link":"https://open-banking-akbb.softclub.by/paymentConsents/instant/6355d816-af36-4407aa5d-8508a43ce834","status":"Authorised","statusUpdateDateTime":"2025-09-24T13:20:33+03:00"},"links":{"self":"https://open-banking-akbb.softclub.by/paymentConsents/instant/6355d816-af36-4407aa5d-8508a43ce834"},"meta":{"totalPages":1},"risk":{"postalAddress":{"addressLine":[],"country":"BY"}}}
-    // let statusPaymentInstantConsent = await getStatusPaymentInstantConsent(config,qpispAccessToken,paymentInstantConsent.data.instantConsentId)
-    // console.log(JSON.stringify(statusPaymentInstantConsent))
-    // await appendToDefinedFile("logs.txt","instantConsentGET1_response",JSON.stringify(statusPaymentInstantConsent))
-
-    // let accountsPaymentInstantConsent = await getAccountsPaymentInstantConsent(config,qpispAccessToken,paymentInstantConsent.data.instantConsentId)
-    // console.log(JSON.stringify(accountsPaymentInstantConsent))
-    // await appendToDefinedFile("logs.txt","accountsPaymentInstantConsent_response",JSON.stringify(accountsPaymentInstantConsent))
-
-    // let balancesPaymentInstantConsent = await getBalancesPaymentInstantConsent(config,qpispAccessToken,paymentInstantConsent.data.instantConsentId)
-    // console.log(JSON.stringify(balancesPaymentInstantConsent))
-    // await appendToDefinedFile("logs.txt","balancesPaymentInstantConsent_response",JSON.stringify(balancesPaymentInstantConsent))
-
-    // let deletedPaymentInstantConsent = await deletePaymentInstantConsent(config,qpispAccessToken,paymentInstantConsent.data.instantConsentId)
-    // let deletedPaymentInstantConsent = await deletePaymentInstantConsent(config,qpispAccessToken,"f988e9ac-acf8-417da25a-d0d88904e0b8")
-
-    // let statusPaymentInstantConsent = await getStatusPaymentInstantConsent(config,qpispAccessToken,paymentInstantConsent.data.instantConsentId)
-    // console.log(JSON.stringify(statusPaymentInstantConsent))
-    // await appendToDefinedFile("logs.txt","instantConsentGET2_response",JSON.stringify(statusPaymentInstantConsent))
-
-    // let generatedURLforPatch = await generateURLforPatchPaymentConsentInstant(config,qpispAccessToken,paymentInstantConsent.data.ASPSPsession)
-    // console.log(JSON.stringify(generatedURLforPatch))
-
-  //   let headersList = {
-  //     "Content-Type": "application/json;charset=utf-8",
-  //     'accept': 'application/json;charset=utf-8',
-  //     'Accept-Language': 'ru',
-  //   }
-  //   await appendToDefinedFile("logs.txt","headersList",JSON.stringify(headersList))
-  //   console.log(JSON.stringify(headersList))
-  //   let reqBodyPATCH = JSON.stringify({"data":{
-  //       "ASPSPsession":config.ASPSPsession,
-  //       "QPISPsession":config.url_swagger+"instantPSUredirect?session="+config.QPISPsession,
-  //       "JWSsignature":(generatedURLforPatch.split("&")[2]).split("=")[1]
-  //       }})
-  //   const response = await fetch(config.url_swagger + "openbanking/paymentConsents/instant", {
-  //   method: "PATCH",
-  //   mode: "cors",
-  //   headers: headersList,
-  //   body: reqBodyPATCH
-  // });
-  //   console.log(response)
-  //   await appendToDefinedFile("logs.txt","PATCHrequestBody", reqBodyPATCH)
-  //   await appendToDefinedFile("logs.txt","PATCHresponse",await JSON.stringify(response))
-  //   await appendToDefinedFile("logs.txt","instantConsentCreate_response",JSON.stringify(generatedURLforPatch))
-
-    /////////////////////////////////////////////////////////////////////////////
-    // authType = "OBclientCredentials"
-
-    // let body = getRequestBody("pispAuth","paymentConsents/domestic4.1")
-    // let consentCreateResponse = await makePOSTrequest(config, "pispAuth","/paymentConsents/domestic",body,["x-api-key","x-fapi-auth-date","x-fapi-customer-ip-address","x-fapi-interaction-id","application/json","x-idempotency-key"])
-    // console.log(JSON.stringify(consentCreateResponse))
-    // await appendToDefinedFile("logs.txt","consentCreate_response",JSON.stringify(consentCreateResponse))
-    // let domesticConsentId = consentCreateResponse.data.domesticConsentId
-
-    let consentGETResponse = await makeGETrequest(config, "pispAuth","/paymentConsents/domestic/{domesticConsentId}","/paymentConsents/domestic/609b0066-7283-4df08e41-2e61337f24e5",[ 'application/json', 'x-api-key' ])
-    console.log(JSON.stringify(consentGETResponse))
-    await appendToDefinedFile("logs.txt","consentGET_response",JSON.stringify(consentGETResponse))
-
-    // let body = getRequestBody("pispAuthTax","POSTpaymentConsents/domesticTax2")
-    // let consentTaxCreateResponse = await makePOSTrequest(config, "pispAuthTax","/paymentConsents/domesticTax",body,["x-api-key","x-fapi-auth-date","x-fapi-customer-ip-address","x-fapi-interaction-id","content-type","x-idempotency-key"])
-    // console.log(JSON.stringify(consentTaxCreateResponse))
-    // await appendToDefinedFile("logs.txt","consentCreate_response",JSON.stringify(consentTaxCreateResponse))
-    // let requestObject = await generateRequestPISPauthorisationCode(config,domesticConsentId)
-    // console.log(JSON.stringify(requestObject))
-    // await appendToDefinedFile("logs.txt","requestObject_response",JSON.stringify(requestObject))
-    // let domesticConsentId = "ca6806de-a5ab-47569675-7b8f17684c27"
-    // await deletePaymentConsentsDomestic(config,dboClientAccessToken,domesticConsentId)
-    // let requestBodyName = "paymentConsents/domestic1"
-    // savePaymentBody(await createPaymentBody(requestBodyName,domesticConsentId))
-
-    // let consentListDBO = await getConsentListDBO(config,dboClientAccessToken,domesticConsentId)
-    // console.log(JSON.stringify(consentListDBO))
-    // await appendToDefinedFile("logs.txt","consentList",JSON.stringify(consentListDBO))
-
-    // let consentList = await getConsentList(config,pispAccessToken)
-    // console.log(JSON.stringify(consentList))
-    // await appendToDefinedFile("logs.txt","consentList",JSON.stringify(consentList))
-
-    // let consentStatusDBO = await getConsentStatusDBO(config,dboClientAccessToken,domesticConsentId)
-    // console.log(JSON.stringify(consentStatusDBO))
-    // await appendToDefinedFile("logs.txt","consentStatusDBO",JSON.stringify(consentStatusDBO))
-
-    // let consentStatus = await getConsentStatus(config,pispAccessToken,domesticConsentId)
-    // console.log(JSON.stringify(consentStatus))
-    // await appendToDefinedFile("logs.txt","consentStatus",JSON.stringify(consentStatus))
-
-    // let accListPayments = await getAccListPayments(config,dboClientAccessToken,domesticConsentId)
-    // console.log(JSON.stringify(accListPayments))
-    // await appendToDefinedFile("logs.txt","accListPayments",JSON.stringify(accListPayments))
-
-    // let accListPayments = await getAccListPaymentsKEYCLOAK(config,"","V087_TEST1",config.client_id_pisp,domesticConsentId)
-    // console.log(JSON.stringify(accListPayments))
-    // await appendToDefinedFile("logs.txt","accListPayments",JSON.stringify(accListPayments))
-
-    // let accListcheck = await getAccListPaymentsKEYCLOAKcheck(config,"","V087_TEST1",config.client_id_pisp,accListPayments)
-    // console.log(JSON.stringify(accListcheck))
-    // await appendToDefinedFile("logs.txt","accListPaymentscheck","V087_TEST1",config.client_id_pisp,JSON.stringify(accListcheck))
-
-    // let authorisedPayment = await authorisePayment(config, dboClientAccessToken, accListPayments)
-    // console.log(JSON.stringify(authorisedPayment))
-    // await appendToDefinedFile("logs.txt","authorisedPayment_response",JSON.stringify(authorisedPayment))
-
-    // let consentStatus1 = await getConsentStatusDBO(config,dboClientAccessToken,domesticConsentId)
-    // console.log(JSON.stringify(consentStatus1))
-    // await appendToDefinedFile("logs.txt","consentStatusAuthorised",JSON.stringify(consentStatus1))
-
-    // await deletePaymentConsentsDomestic(config,dboClientAccessToken,domesticConsentId)
-    // authType = "OBclientCredentials"
-    // await deletePaymentConsentsDomesticDBO(config,dboClientAccessToken,domesticConsentId)
-    // let consentStatus2 = await getConsentStatusDBO(config,dboClientAccessToken,domesticConsentId)
-    // console.log(JSON.stringify(consentStatus2))
-    // await appendToDefinedFile("logs.txt","consentStatus2",JSON.stringify(consentStatus2))
-
-    // pispAccessToken = "eyJhbGciOiJCSUdOUzEyOCIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCNkQ3NDk4RUUwRTY3QTM2OEU5MjE4MTBFNTM4NDlCMEM3QTY5NjQ2In0.eyJleHAiOjE3NjQzMTgwMzMsImlhdCI6MTc2NDIzMTYzNCwiYXV0aF90aW1lIjoxNzY0MjMxNjMzLCJqdGkiOiI3MThlOGQ2NC04YWVmLTQwZjQtYjAxMC1hNmNmYmY3OTkxMTkiLCJpc3MiOiJodHRwczovL29wZW4tYmFua2luZy1ha2JiLnNvZnRjbHViLmJ5L2F1dGgvcmVhbG1zL1NDUmVhbG0iLCJzdWIiOiI3OTE2MjQ5NS00OThhLTQxODgtYjliMi1mNmE4YjVlOGRjM2UiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJQSVNQVEVTVCIsInNlc3Npb25fc3RhdGUiOiJlYzU2OTk0NS1iNDY1LTQyZDktYWQxMy0wOTdjOWVjOTlkOWYiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiU0MtTUFQX05CUkJfUldfUFNVLVBBWU1FTlRTX0FDQ0VTUyIsIlNDLU1BUF9HRVRfQVBJLVBBWU1FTlRTX0RPTUVTVElDX0FOWSIsIlNDLU1BUF9QT1NUX0FQSS1QQVlNRU5UU19ET01FU1RJQyIsIlNDLU1BUF9HRVRfQVBJLVBBWU1FTlRDT05TRU5UU19BTllfIiwiU0MtTUFQX0dFVF9BUEktUEFZTUVOVENPTlNFTlRTX0RPTUVTVElDX0FOWV8iLCJTQy1NQVBfREVMRVRFX0FQSS1QQVlNRU5UQ09OU0VOVFNfQU5ZXyIsIlNDLU1BUF9HRVRfQVBJLVBBWU1FTlRDT05TRU5UUyIsIlNDLU1BUF9ST0xFX0FQSS1BQ0NFU1MiLCJTQy1NQVBfUE9TVF9BUEktUEFZTUVOVENPTlNFTlRTX0RPTUVTVElDIiwiU0MtTUFQX0dFVF9BUEktUEFZTUVOVFMiXX0sInNjb3BlIjoib3BlbmlkIFNDLUFQUFMgcGF5bWVudHMiLCJzaWQiOiJlYzU2OTk0NS1iNDY1LTQyZDktYWQxMy0wOTdjOWVjOTlkOWYiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJWMDg3X1RFU1QxIiwiY2xpZW50X2d1aWQiOiJlYTU5NmQ0My1hYjk0LTRkY2UtOTYzYS00MzY2MTQ3MmYwYjEifQ.MIIGmQYJKoZIhvcNAQcCoIIGijCCBoYCAQExDzANBgkqcAACACJlH1EFADALBgkqhkiG9w0BBwGgggTDMIIEvzCCBHmgAwIBAgIMQOX0DXB1vxEAAAezMA0GCSpwAAIAImUtDAUAMIHDMVUwUwYDVQQDDExTVEVORCDQoNC10YHQv9GD0LHQu9C40LrQsNC90YHQutC40Lkg0YPQtNC-0YHRgtC-0LLQtdGA0Y_RjtGJ0LjQuSDRhtC10L3RgtGAMV0wWwYDVQQKDFRTVEVORCDQoNCj0J8gItCd0LDRhtC40L7QvdCw0LvRjNC90YvQuSDRhtC10L3RgtGAINGN0LvQtdC60YLRgNC-0L3QvdGL0YUg0YPRgdC70YPQsyIxCzAJBgNVBAYTAkJZMB4XDTIzMDIwMzA3MDQ0MloXDTI2MDIwMjIwNTk1OVowgcExFzAVBgNVBAMTDnNlcnZpY2VjZW50cmUxMRcwFQYDVQQKEw5zZXJ2aWNlY2VudHJlMTELMAkGA1UEBhMCQlkxFzAVBgNVBAgMDtCc0LjQvdGB0LrQsNGPMRMwEQYDVQQHDArQnNC40L3RgdC6MSgwJgYDVQQJDB_QndC10LfQsNCy0LjRgdC40LzQvtGB0YLQuCwgMTgyMRcwFQYDVQQEDA7QlNC10L3QuNGB0L7QsjEPMA0GA1UEKQwG0JQu0JQuMF0wGAYKKnAAAgAiZS0CAQYKKnAAAgAiZS0DAQNBAHuDmY5R8O66-S9qQligOIKzXnkdT7cGHe2F8rMR_2xk6H3nU3mf9l9zc4R6yp428iC0OOxLG3MOeSx4GHQSQOOjggJKMIICRjAXBgNVHSAEEDAOMAwGCipwAQIBAQEDAgEwHwYDVR0jBBgwFoAUAffyCpLr7xmazozGzcugMxjK6ZUwCQYDVR0TBAIwADBGBgNVHR8EPzA9MDugOaA3hjVodHRwOi8vZGV2LmF2ZXN0LmJ5L2NhL2NybC9zdGVuZC1nb3NzdW9rLXN1Yi0yMDE5LmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEFBQcwAYYtaHR0cDovL29jc3Atc3J2LnRlc3QuYXZlc3QuYnk6ODA4MC9yZXNwb25kZXIvMEIGCCsGAQUFBzAChjZodHRwOi8vZGV2LmF2ZXN0LmJ5L2NhL2NlcnQvc3RlbmQtZ29zc3Vvay1zdWItMjAxOS5jZXIwHQYDVR0OBBYEFLbXSY7g5no2jpIYEOU4SbDHppZGMAsGA1UdDwQEAwIDuDATBgNVHSUEDDAKBggrBgEFBQcDAjAhBgkqcAECAQEBAQIEFB4SADEAOQAyADgAMwA3ADQANgA1MDwGCCpwAQIBAQUBBDAeLgQhBDgEQQRCBDUEPAQ9BEsEOQAgBDAENAQ8BDgEPQQ4BEEEQgRABDAEQgQ-BEAwGAYIKnABAgEBBQIEDB4KAGEAZABtAGkAbjArBgkqcAECAQEBAQEEHh4cADMAMQA2ADAANwA4ADAAQwAwADAANgBQAEIAMjA9BgkqcAECAQEBAgEEMB4uADEALgAyAC4AMQAxADIALgAxAC4AMgAuADEALgAxAC4AMQAuADIALgAxAC4ANDANBgkqcAACACJlLQwFAAMxAOj7ovuTQJTLsoFKW7MU6S4IcZi8LJX8JvxlYlHwSDI-kQ_COxeIjlcWuWSSYmcTXDGCAZowggGWAgEBMIHUMIHDMVUwUwYDVQQDDExTVEVORCDQoNC10YHQv9GD0LHQu9C40LrQsNC90YHQutC40Lkg0YPQtNC-0YHRgtC-0LLQtdGA0Y_RjtGJ0LjQuSDRhtC10L3RgtGAMV0wWwYDVQQKDFRTVEVORCDQoNCj0J8gItCd0LDRhtC40L7QvdCw0LvRjNC90YvQuSDRhtC10L3RgtGAINGN0LvQtdC60YLRgNC-0L3QvdGL0YUg0YPRgdC70YPQsyIxCzAJBgNVBAYTAkJZAgxA5fQNcHW_EQAAB7MwDQYJKnAAAgAiZR9RBQCgaTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNTExMjcwODIwMzBaMC8GCSqGSIb3DQEJBDEiBCCjwVzVQwh_TdnOEDdJI7uW_jx6rOpAry5upyViZeGr2TAOBgoqcAACACJlLQIBBQAEMOh7sPf6fNF_caKfmbpGixBMEpLXd5ZFyyosA5yoSNflq2Z8EElovi729CabK5q5wg"
-    // await modifyPostPaymentsDomesticDomesticIdBody(domesticConsentId,consentCreateResponse.data.initiation)
-    // let payment = await createPayment(config,pispAccessToken)
-    // console.log(JSON.stringify(payment))
-    // await sleep(5000)
-    // await appendToDefinedFile("logs.txt","payments_response",JSON.stringify(payment))
-
-    // let payment = {"data":{"domesticId":"795ABSB2025092900000000002739060000"}}
-    // let paymentStatusDomestic = await getPaymentsDomesticByDomesticId(config,pispAccessToken,payment.data.domesticId)
-    // console.log(JSON.stringify(paymentStatusDomestic))
-    // await appendToDefinedFile("logs.txt","paymentStatusDomestic",JSON.stringify(paymentStatusDomestic))
-
-    // let paymentStatusDomesticDBO = await getPaymentsDomesticByDomesticIdDBO(config,dboClientAccessToken,payment.data.domesticId)
-    // console.log(JSON.stringify(paymentStatusDomesticDBO))
-    // await appendToDefinedFile("logs.txt","paymentStatusDomesticDBO",JSON.stringify(paymentStatusDomesticDBO))
-
-
-
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////// INVOICE
-    // let paymentInstantInvoice = await createPaymentInstantInvoice(config,tpeAccessToken)
-    // console.log(JSON.stringify(paymentInstantInvoice))
-    // https://pay.raschet.by/#00020132480010rtpraschet10300J48ZQE28O6YXOU2BMFMBEI3M6FN8353039335802BY6304B5DB
-    // await appendToDefinedFile("logs.txt","paymentInstantInvoice_response",JSON.stringify(paymentInstantInvoice))
-    // let paymentInstantInvoice = {"data":{"charge":[],"creationDateTime":"2025-12-05T18:11:50+03:00","initiation":{"amount":"5.01","creditor":{"countryOfResidence":"BY","name":"Свято-Рождество-Богородицкий женский монастырь","organisationIdentification":[{"code":"BANK","identification":"33"},{"code":"TXID","identification":"INN200945320"}],"privateIdentification":[]},"creditorAccount":{"identification":"BY34AKBB30154814813001000000","schemeName":"BY.NBRB.IBAN"},"creditorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"currency":"BYN","endToEndIdentification":"99.20250725.B5A81B11763E5799","expiryDateTime":"2025-12-06T15:03:30+03:00","instantPaymentType":"rtp_qr","instructionIdentification":"795SDBO20250726AE5B7B6B1BD775C0","localInstrument":"BY.NBRB.RTP.QR","pointOfInteraction":{"pointOfInteractionIdentification":[{"code":"BANK","identification":"33-STAT"}],"pointOfInteractionName":"Церковная лавка Свято-Рождество-Богородицкого женского монастыря","pointOfInteractionType":"APLI"},"remittanceInformation":{"categoryPurposeCode":"MP2B","proprietaryPurpose":"190401.11","referredDocument":[{"lineDetails":[],"number":"1","relatedDate":"2025-12-06","type":"RTPS"},{"lineDetails":[],"number":"B5A81B11563E5780","relatedDate":"2025-12-06","type":"PROF"}]}},"invoiceInstantId":"BI2UZSNEQDZ221PS0SXWZTBOW582E4","invoiceStatus":{"invoiceInstantStatus":"RequestToPay","statusUpdateDateTime":"2025-12-05T18:11:50+03:00"},"paymentLink":[{"URI":"https://pay.raschet.by/#00020132480010rtpraschet1030BI2UZSNEQDZ221PS0SXWZTBOW582E453039335802BY6304F819","type":"PaymentLinkByQR"}]},"links":{"self":"https://sc-map-testversion-vip.softclub.by:8008/invoices/instant/BI2UZSNEQDZ221PS0SXWZTBOW582E4"},"meta":{"totalPages":1},"risk":{"deliveryAddress":{"addressLine":[],"country":"BY"}}}
-    // await modifyPATCHpaymentInvoiceBody(paymentInstantInvoice.data.paymentLink[0]["URI"],paymentInstantConsent.data.instantConsentId,paymentInstantInvoice.data.invoiceInstantId,paymentInstantInvoice.data.initiation.instructionIdentification,paymentInstantInvoice.data.initiation.endToEndIdentification)
-    // let patchInstantInvoice = await patchPaymentInstantInvoice(config,qpispAccessToken)
-    // console.log(JSON.stringify(patchInstantInvoice))
-    // await appendToDefinedFile("logs.txt","patchInstantInvoice_response",JSON.stringify(patchInstantInvoice))
-    // let patchInstantInvoice = {"data":{"UETR":"XTII0FZROCW6UIZIRD9GRR9IE9UINRWUT5T","charge":[],"creationDateTime":"2025-12-05T18:11:50+03:00","expectedExecutionDateTime":"2025-12-05T18:21:54+03:00","initiation":{"creditor":{"countryOfResidence":"BY","name":"СЦ_ОТС","organisationIdentification":[{"code":"TXID","identification":"IZP999565111"},{"code":"BANK","identification":"33"}],"postalAddress":{"addressLine":["Минск"],"country":"BY"},"privateIdentification":[]},"creditorAccount":{"identification":"BY93CLUB30126100000000000002","schemeName":"BY.NBRB.IBAN"},"creditorAgent":{"identification":"CLUBBY2X","name":"Г. МИНСК, НАШ БАНК"},"pointOfInteraction":{"pointOfInteractionIdentification":[{"code":"BANK","identification":"33-STAT"}],"pointOfInteractionName":"Торговый терминал (рабочее место с кассира)","pointOfInteractionType":"TERM"}},"instantConsentId":"f988e9ac-acf8-417da25a-d0d88904e0b8","instantInvoicePaymentId":"795ABSB202512050000000003840268","instruction":{"amount":"5.01","creditor":{"countryOfResidence":"BY","name":"СЦ_ОТС","organisationIdentification":[{"code":"TXID","identification":"IZP999565111"},{"code":"BANK","identification":"33"}],"postalAddress":{"addressLine":["Минск"],"country":"BY"},"privateIdentification":[]},"creditorAccount":{"identification":"BY93CLUB30126100000000000002","schemeName":"BY.NBRB.IBAN"},"creditorAgent":{"identification":"CLUBBY2X","name":"Г. МИНСК, НАШ БАНК"},"currency":"BYN","debtor":{"countryOfResidence":"BY","name":"Митрофан Доромидонтович Белуга","privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]},"debtorAccount":{"identification":"BY39SOFT30140000535240070000","schemeName":"BY.NBRB.IBAN"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"instantPaymentType":"rtp_qr","localInstrument":"BY.NBRB.RTP.QR","modificationIdentification":"795SPPUNaNNaNNaN6FF861BCA2A3C6E9","paymentEndToEndIdentification":"01.NaNNaNNaN.4E03DAAF2069B215","paymentInstructionIdentification":"795SDBONaNNaNNaNFBF452832AB8032C","pointOfInteraction":{"pointOfInteractionIdentification":[{"code":"BANK","identification":"33-STAT"}],"pointOfInteractionName":"Торговый терминал (рабочее место с кассира)","pointOfInteractionType":"TERM"},"remittanceInformation":{"categoryPurposeCode":"MP2B","proprietaryPurpose":"190401.13","referredDocument":[{"lineDetails":[],"number":"99550000001","relatedDate":"2025-12-05","type":"Z025"},{"lineDetails":[],"number":"3840268","relatedDate":"2025-12-05","type":"Z125"},{"lineDetails":[],"number":"B5A81B11763E5799","relatedDate":"2025-12-05","type":"PROF"},{"lineDetails":[],"number":"BI2UZSNEQDZ221PS0SXWZTBOW582E4","relatedDate":"2025-12-05","type":"CINV"},{"lineDetails":[],"number":"1","relatedDate":"2025-12-05","type":"RTPS"}]}},"invoiceInstantId":"BI2UZSNEQDZ221PS0SXWZTBOW582E4","invoiceStatus":{"invoiceInstantStatus":"RequestToPay","statusUpdateDateTime":"2025-12-05T18:11:50+03:00"},"modification":{"debtor":{"countryOfResidence":"BY","name":"Митрофан Доромидонтович Белуга","privateIdentification":[{"code":"NIDN","identification":"3010190K002PB2"}]},"debtorAccount":{"identification":"BY39SOFT30140000535240070000","schemeName":"BY.NBRB.IBAN"},"debtorAgent":{"identification":"AKBBBY2X","name":"ОАО 'АСБ Беларусбанк'"},"instantPaymentType":"rtp_qr","localInstrument":"BY.NBRB.RTP.QR","modificationIdentification":"795SPPUNaNNaNNaN6FF861BCA2A3C6E9","paymentEndToEndIdentification":"01.NaNNaNNaN.4E03DAAF2069B215","paymentInstructionIdentification":"795SDBONaNNaNNaNFBF452832AB8032C"},"paymentLink":[{"URI":"https://pay.raschet.by/#00020132480010rtpraschet1030BI2UZSNEQDZ221PS0SXWZTBOW582E453039335802BY6304F819","type":"PaymentLinkByQR"}],"paymentStatus":{"paymentStatus":"ACWC","statusUpdateDateTime":"2025-12-05T18:11:50+03:00"}},"links":{"self":"https://sc-map-testversion-vip.softclub.by:8008/invoices/instant/BI2UZSNEQDZ221PS0SXWZTBOW582E4"},"meta":{"totalPages":1},"risk":{"deliveryAddress":{"addressLine":[],"country":"BY"}}}
-    // await modifyPOSTpaymentsInstant(paymentInstantConsent.data.instantConsentId,patchInstantInvoice.data.instruction.paymentInstructionIdentification,patchInstantInvoice.data.instruction.paymentEndToEndIdentification,paymentInstantConsent.data.initiation,patchInstantInvoice.data.instruction)
-
-    // await appendToDefinedFile("logs.txt","sorted_POST",JSON.stringify(sortObjectAlphabeticallyOld(await getRequestBody("qpispAuth","POSTpayments/instant1"))))
-    // let postPaymentsInstantRes = await postPaymentsInstant(config,qpispAccessToken)
-    // console.log(JSON.stringify(postPaymentsInstantRes))
-    // await appendToDefinedFile("logs.txt","postPaymentsInstant_response",sortObjectAlphabeticallyOld(JSON.stringify(postPaymentsInstantRes)))
-
-    // let postPaymentsInstantRes = {data:{instantPaymentId:"7c4f5db9-b672-4c03ba98-07d055352864"}}
-    // let getPaymentsInstantRes = await getPaymentsInstant(config,qpispAccessToken,postPaymentsInstantRes.data.instantPaymentId)
-    // console.log(JSON.stringify(getPaymentsInstantRes))
-    // await appendToDefinedFile("logs.txt","getPaymentsInstantRes_response",JSON.stringify(getPaymentsInstantRes))
-}
-
-// main1()
-// let res = convertBase64UrlToBase64("MIIGmQYJKoZIhvcNAQcCoIIGijCCBoYCAQExDzANBgkqcAACACJlH1EFADALBgkqhkiG9w0BBwGgggTDMIIEvzCCBHmgAwIBAgIMQOX0DXB1vxEAAAezMA0GCSpwAAIAImUtDAUAMIHDMVUwUwYDVQQDDExTVEVORCDQoNC10YHQv9GD0LHQu9C40LrQsNC90YHQutC40Lkg0YPQtNC-0YHRgtC-0LLQtdGA0Y_RjtGJ0LjQuSDRhtC10L3RgtGAMV0wWwYDVQQKDFRTVEVORCDQoNCj0J8gItCd0LDRhtC40L7QvdCw0LvRjNC90YvQuSDRhtC10L3RgtGAINGN0LvQtdC60YLRgNC-0L3QvdGL0YUg0YPRgdC70YPQsyIxCzAJBgNVBAYTAkJZMB4XDTIzMDIwMzA3MDQ0MloXDTI2MDIwMjIwNTk1OVowgcExFzAVBgNVBAMTDnNlcnZpY2VjZW50cmUxMRcwFQYDVQQKEw5zZXJ2aWNlY2VudHJlMTELMAkGA1UEBhMCQlkxFzAVBgNVBAgMDtCc0LjQvdGB0LrQsNGPMRMwEQYDVQQHDArQnNC40L3RgdC6MSgwJgYDVQQJDB_QndC10LfQsNCy0LjRgdC40LzQvtGB0YLQuCwgMTgyMRcwFQYDVQQEDA7QlNC10L3QuNGB0L7QsjEPMA0GA1UEKQwG0JQu0JQuMF0wGAYKKnAAAgAiZS0CAQYKKnAAAgAiZS0DAQNBAHuDmY5R8O66-S9qQligOIKzXnkdT7cGHe2F8rMR_2xk6H3nU3mf9l9zc4R6yp428iC0OOxLG3MOeSx4GHQSQOOjggJKMIICRjAXBgNVHSAEEDAOMAwGCipwAQIBAQEDAgEwHwYDVR0jBBgwFoAUAffyCpLr7xmazozGzcugMxjK6ZUwCQYDVR0TBAIwADBGBgNVHR8EPzA9MDugOaA3hjVodHRwOi8vZGV2LmF2ZXN0LmJ5L2NhL2NybC9zdGVuZC1nb3NzdW9rLXN1Yi0yMDE5LmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEFBQcwAYYtaHR0cDovL29jc3Atc3J2LnRlc3QuYXZlc3QuYnk6ODA4MC9yZXNwb25kZXIvMEIGCCsGAQUFBzAChjZodHRwOi8vZGV2LmF2ZXN0LmJ5L2NhL2NlcnQvc3RlbmQtZ29zc3Vvay1zdWItMjAxOS5jZXIwHQYDVR0OBBYEFLbXSY7g5no2jpIYEOU4SbDHppZGMAsGA1UdDwQEAwIDuDATBgNVHSUEDDAKBggrBgEFBQcDAjAhBgkqcAECAQEBAQIEFB4SADEAOQAyADgAMwA3ADQANgA1MDwGCCpwAQIBAQUBBDAeLgQhBDgEQQRCBDUEPAQ9BEsEOQAgBDAENAQ8BDgEPQQ4BEEEQgRABDAEQgQ-BEAwGAYIKnABAgEBBQIEDB4KAGEAZABtAGkAbjArBgkqcAECAQEBAQEEHh4cADMAMQA2ADAANwA4ADAAQwAwADAANgBQAEIAMjA9BgkqcAECAQEBAgEEMB4uADEALgAyAC4AMQAxADIALgAxAC4AMgAuADEALgAxAC4AMQAuADIALgAxAC4ANDANBgkqcAACACJlLQwFAAMxAOj7ovuTQJTLsoFKW7MU6S4IcZi8LJX8JvxlYlHwSDI-kQ_COxeIjlcWuWSSYmcTXDGCAZowggGWAgEBMIHUMIHDMVUwUwYDVQQDDExTVEVORCDQoNC10YHQv9GD0LHQu9C40LrQsNC90YHQutC40Lkg0YPQtNC-0YHRgtC-0LLQtdGA0Y_RjtGJ0LjQuSDRhtC10L3RgtGAMV0wWwYDVQQKDFRTVEVORCDQoNCj0J8gItCd0LDRhtC40L7QvdCw0LvRjNC90YvQuSDRhtC10L3RgtGAINGN0LvQtdC60YLRgNC-0L3QvdGL0YUg0YPRgdC70YPQsyIxCzAJBgNVBAYTAkJZAgxA5fQNcHW_EQAAB7MwDQYJKnAAAgAiZR9RBQCgaTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNTExMDYwOTEyMzhaMC8GCSqGSIb3DQEJBDEiBCAi3cY0ez7PGkV0a9ocOpmoyc5Qls0wENF5Niocf_S3lzAOBgoqcAACACJlLQIBBQAEMOZ81ijZw_tZJvGXN42ZZm0UIeaIqO1hnGMuxRfvKlVsMatESAsY3SoIeStaApTw1w")
-// appendToDefinedFile("logs.txt","base64sign",res)
 module.exports = {defaultConfig,
     createTokenQPISP,createTokenTPE,createTokenPISP,createDboClientToken,
     abstractGETrequest, abstractDELETErequest,
@@ -2654,6 +1302,7 @@ module.exports = {defaultConfig,
     postListPassportsConsent,patchListPassportsConsent,postListPassportsPayment,putListPassportsConsentExternalRepresentation,
     postRequirementConsent,patchRequirementConsent,postRequirementPayment,putRequirementConsentExternalRepresentation,
     postTaxRequirementConsent,patchTaxRequirementConsent,postTaxRequirementPayment,putTaxRequirementConsentExternalRepresentation,
+    postVRPConsent,patchVRPConsent,postVRPPayment,putVRPConsentExternalRepresentation,
     makePOSTrequest,
     prepareExternalRepresentationBody,prepareExternalRepresentationSpecialPartBody,putConsentSpecialPartExternalRepresentation,prepareAuthorisationBody,preparePaymentsBody,
     getRequestBody,scCryptoHash,generateHeader,scCryptoSign,createImitationInsert,createSpecialPartObject,createExternalRepresentationSpecialPart,renameKeyInObject,createExternalRepresentation,generateRandomHex,getAccListPaymentsKEYCLOAKcheck,getAccListPaymentsKEYCLOAK}
