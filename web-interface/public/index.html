@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PISP API Tester</title>
+    <title>Payment API Tester</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
     <link rel="stylesheet" href="css/styles.css">
@@ -12,7 +12,7 @@
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar">
-            <div class="logo">PISP API Tester</div>
+            <div class="logo">Payment API Tester</div>
             <div class="menu">
                 <div class="menu-section">
                     <div class="menu-header">Navigation</div>
@@ -70,6 +70,7 @@
                             <span>Response</span>
                             <div class="status">
                                 Status: <span class="status-value" id="response-status">Ready</span>
+                                <img id="loading-gif" src="images/loading.gif" alt="Loading..." class="loading-gif" style="display: none;">
                             </div>
                         </div>
                         <div class="editor-container">
@@ -123,9 +124,24 @@
                             <label class="checkbox-container">
                                 <input type="checkbox" name="x-api-key">
                                 <span class="checkmark"></span>
-                                x-api-key
+                                x-api-key (from config)
                             </label>
-                            <input type="text" id="api-key" class="api-key-input" placeholder="API Key">
+                        </div>
+                        <!-- Debtor Identification Section -->
+                        <div class="header-item debtor-identification">
+                            <div class="debtor-label">debtorIdentification</div>
+                            <div class="debtor-options">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="debtorIdentification" value="privateIdentification">
+                                    <span class="checkmark"></span>
+                                    privateIdentification
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="debtorIdentification" value="organisationIdentification">
+                                    <span class="checkmark"></span>
+                                    organisationIdentification
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -169,6 +185,11 @@
                                 <input type="radio" name="paymentType" value="taxRequirement">
                                 <span class="radio-mark"></span>
                                 taxRequirement
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="VRP">
+                                <span class="radio-mark"></span>
+                                VRP
                             </label>
                         </div>
                     </div>
@@ -262,9 +283,24 @@
                                 <label class="checkbox-container">
                                     <input type="checkbox" name="seq-x-api-key" checked>
                                     <span class="checkmark"></span>
-                                    x-api-key
+                                    x-api-key (from config)
                                 </label>
-                                <input type="text" id="sequence-api-key" class="api-key-input" placeholder="API Key">
+                            </div>
+                            <!-- Debtor Identification Section -->
+                            <div class="header-item debtor-identification">
+                                <div class="debtor-label">debtorIdentification</div>
+                                <div class="debtor-options">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" name="seq-debtorIdentification" value="privateIdentification">
+                                        <span class="checkmark"></span>
+                                        privateIdentification
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" name="seq-debtorIdentification" value="organisationIdentification">
+                                        <span class="checkmark"></span>
+                                        organisationIdentification
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -274,6 +310,10 @@
                         <h3>Results</h3>
                         <div id="sequence-results" class="sequence-results">
                             <div class="no-results">No results yet. Execute a sequence to see results here.</div>
+                        </div>
+                        <div id="sequence-loading" class="sequence-loading" style="display: none;">
+                            <img src="images/loading.gif" alt="Loading..." class="loading-gif">
+                            <span>Executing sequence...</span>
                         </div>
                     </div>
                 </div>

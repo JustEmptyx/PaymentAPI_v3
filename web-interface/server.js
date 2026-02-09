@@ -40,6 +40,9 @@ const functionGroups = {
     "common": [
         "GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}",
         'PUT /paymentConsents/createSpecialPartExternalRepresentation',
+        "GET /paymentConsents",
+        "GET /paymentConsents/PSUorPAU/{userId}",
+        "GET /payments",
     ],
     "domestic": [
         "POST /paymentConsents/domestic",
@@ -50,10 +53,10 @@ const functionGroups = {
         "GET /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}",
         "DELETE /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}",
         "POST /payments/domestic",
-        "GET /payments/domestic/{domesticConsentId}",
-        "DELETE /payments/domestic/{domesticConsentId}",
-        "GET /payments/domestic/{domesticConsentId}/PSUorPAU/{userId}",
-        "DELETE /payments/domestic/{domesticConsentId}/PSUorPAU/{userId}",
+        "GET /payments/domestic/{domesticId}",
+        "DELETE /payments/domestic/{domesticId}",
+        "GET /payments/domestic/{domesticId}/PSUorPAU/{userId}",
+        "DELETE /payments/domestic/{domesticId}/PSUorPAU/{userId}",
     ],
     "domesticTax": [
         "POST /paymentConsents/domesticTax",
@@ -64,10 +67,10 @@ const functionGroups = {
         "GET /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
         "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
         "POST /payments/domesticTax",
-        "GET /payments/domesticTax/{domesticTaxConsentId}",
-        "DELETE /payments/domesticTax/{domesticTaxConsentId}",
-        "GET /payments/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
-        "DELETE /payments/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
+        "GET /payments/domesticTax/{domesticTaxId}",
+        "DELETE /payments/domesticTax/{domesticTaxId}",
+        "GET /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}",
+        "DELETE /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}",
     ],
     "listAccounts": [
         "POST /paymentConsents/listAccounts",
@@ -78,10 +81,10 @@ const functionGroups = {
         "GET /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
         "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
         "POST /payments/listAccounts",
-        "GET /payments/listAccounts/{listAccountsConsentId}",
-        "DELETE /payments/listAccounts/{listAccountsConsentId}",
-        "GET /payments/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
-        "DELETE /payments/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
+        "GET /payments/listAccounts/{listAccountsId}",
+        "DELETE /payments/listAccounts/{listAccountsId}",
+        "GET /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}",
+        "DELETE /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}",
     ],
     "listPassports": [
         "POST /paymentConsents/listPassports",
@@ -92,10 +95,10 @@ const functionGroups = {
         "GET /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
         "DELETE /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
         "POST /payments/listPassports",
-        "GET /payments/listPassports/{listPassportsConsentId}",
-        "DELETE /payments/listPassports/{listPassportsConsentId}",
-        "GET /payments/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
-        "DELETE /payments/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
+        "GET /payments/listPassports/{listPassportsId}",
+        "DELETE /payments/listPassports/{listPassportsId}",
+        "GET /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}",
+        "DELETE /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}",
     ],
     "requirement": [
         "POST /paymentConsents/requirement",
@@ -106,10 +109,10 @@ const functionGroups = {
         "GET /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}",
         "DELETE /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}",
         "POST /payments/requirement",
-        "GET /payments/requirement/{requirementConsentId}",
-        "DELETE /payments/requirement/{requirementConsentId}",
-        "GET /payments/requirement/{requirementConsentId}/PSUorPAU/{userId}",
-        "DELETE /payments/requirement/{requirementConsentId}/PSUorPAU/{userId}",
+        "GET /payments/requirement/{requirementId}",
+        "DELETE /payments/requirement/{requirementId}",
+        "GET /payments/requirement/{requirementId}/PSUorPAU/{userId}",
+        "DELETE /payments/requirement/{requirementId}/PSUorPAU/{userId}",
     ],
     "taxRequirement": [
         "POST /paymentConsents/taxRequirement",
@@ -120,10 +123,24 @@ const functionGroups = {
         "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
         "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
         "POST /payments/taxRequirement",
-        "GET /payments/taxRequirement/{taxRequirementConsentId}",
-        "DELETE /payments/taxRequirement/{taxRequirementConsentId}",
-        "GET /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
-        "DELETE /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
+        "GET /payments/taxRequirement/{taxRequirementId}",
+        "DELETE /payments/taxRequirement/{taxRequirementId}",
+        "GET /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}",
+        "DELETE /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}",
+    ],
+    "VRP": [
+        "POST /paymentConsents/VRP",
+        "PUT /paymentConsents/VRP/createExternalRepresentation",
+        "PATCH /paymentConsents/VRP",
+        "GET /paymentConsents/VRP/{VRPConsentId}",
+        "DELETE /paymentConsents/VRP/{VRPConsentId}",
+        "GET /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}",
+        "DELETE /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}",
+        "POST /payments/VRP",
+        "GET /payments/VRP/{VRPId}",
+        "DELETE /payments/VRP/{VRPId}",
+        "GET /payments/VRP/{VRPId}/PSUorPAU/{userId}",
+        "DELETE /payments/VRP/{VRPId}/PSUorPAU/{userId}",
     ],
 };
 
@@ -136,6 +153,10 @@ const functionMappings = {
     'GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}':'abstractGETrequest',
     'PUT /paymentConsents/createSpecialPartExternalRepresentation':'putConsentSpecialPartExternalRepresentation',
 
+    'GET /paymentConsents': 'abstractGETrequest',
+    'GET /paymentConsents/PSUorPAU/{userId}': 'abstractGETrequest',
+    'GET /payments': 'abstractGETrequest',
+
     'POST /paymentConsents/domestic': 'postDomesticConsent',
     'PUT /paymentConsents/createExternalRepresentation' : 'putDomesticConsentExternalRepresentation',
     'PATCH /paymentConsents/domestic':'patchDomesticConsent',
@@ -144,10 +165,10 @@ const functionMappings = {
     'GET /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}': 'abstractGETrequest',
     'DELETE /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}': 'abstractDELETErequest',
     'POST /payments/domestic': 'postDomesticPayment',
-    'GET /payments/domestic/{domesticConsentId}': 'abstractGETrequest',
-    'DELETE /payments/domestic/{domesticConsentId}': 'abstractDELETErequest',
-    'GET /payments/domestic/{domesticConsentId}/PSUorPAU/{userId}': 'abstractGETrequest',
-    'DELETE /payments/domestic/{domesticConsentId}/PSUorPAU/{userId}': 'abstractDELETErequest',
+    'GET /payments/domestic/{domesticId}': 'abstractGETrequest',
+    'DELETE /payments/domestic/{domesticId}': 'abstractDELETErequest',
+    'GET /payments/domestic/{domesticId}/PSUorPAU/{userId}': 'abstractGETrequest',
+    'DELETE /payments/domestic/{domesticId}/PSUorPAU/{userId}': 'abstractDELETErequest',
 
     'POST /paymentConsents/domesticTax': 'postDomesticTaxConsent',
     'PUT /paymentConsents/domesticTax/createExternalRepresentation' : 'putDomesticTaxConsentExternalRepresentation',
@@ -157,10 +178,10 @@ const functionMappings = {
     "GET /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
     "POST /payments/domesticTax": 'postDomesticTaxPayment',
-    "GET /payments/domesticTax/{domesticTaxConsentId}": 'abstractGETrequest',
-    "DELETE /payments/domesticTax/{domesticTaxConsentId}": 'abstractDELETErequest',
-    "GET /payments/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
-    "DELETE /payments/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+    "GET /payments/domesticTax/{domesticTaxId}": 'abstractGETrequest',
+    "DELETE /payments/domesticTax/{domesticTaxId}": 'abstractDELETErequest',
+    "GET /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}": 'abstractGETrequest',
+    "DELETE /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/listAccounts":'postListAccountsConsent',
     'PUT /paymentConsents/listAccounts/createExternalRepresentation' : 'putListAccountsConsentExternalRepresentation',
@@ -170,10 +191,10 @@ const functionMappings = {
     "GET /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
     "POST /payments/listAccounts":'postListAccountsPayment',
-    "GET /payments/listAccounts/{listAccountsConsentId}": 'abstractGETrequest',
-    "DELETE /payments/listAccounts/{listAccountsConsentId}": 'abstractDELETErequest',
-    "GET /payments/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
-    "DELETE /payments/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+    "GET /payments/listAccounts/{listAccountsId}": 'abstractGETrequest',
+    "DELETE /payments/listAccounts/{listAccountsId}": 'abstractDELETErequest',
+    "GET /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}": 'abstractGETrequest',
+    "DELETE /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/listPassports":'postListPassportsConsent',
     'PUT /paymentConsents/listPassports/createExternalRepresentation' : 'putListPassportsConsentExternalRepresentation',
@@ -183,10 +204,10 @@ const functionMappings = {
     "GET /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
     "POST /payments/listPassports":'postListPassportsPayment',
-    "GET /payments/listPassports/{listPassportsConsentId}": 'abstractGETrequest',
-    "DELETE /payments/listPassports/{listPassportsConsentId}": 'abstractDELETErequest',
-    "GET /payments/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
-    "DELETE /payments/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+    "GET /payments/listPassports/{listPassportsId}": 'abstractGETrequest',
+    "DELETE /payments/listPassports/{listPassportsId}": 'abstractDELETErequest',
+    "GET /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}": 'abstractGETrequest',
+    "DELETE /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/requirement":'postRequirementConsent',
     'PUT /paymentConsents/requirement/createExternalRepresentation' : 'putRequirementConsentExternalRepresentation',
@@ -196,10 +217,10 @@ const functionMappings = {
     "GET /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
     "POST /payments/requirement":'postRequirementPayment',
-    "GET /payments/requirement/{requirementConsentId}": 'abstractGETrequest',
-    "DELETE /payments/requirement/{requirementConsentId}": 'abstractDELETErequest',
-    "GET /payments/requirement/{requirementConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
-    "DELETE /payments/requirement/{requirementConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+    "GET /payments/requirement/{requirementId}": 'abstractGETrequest',
+    "DELETE /payments/requirement/{requirementId}": 'abstractDELETErequest',
+    "GET /payments/requirement/{requirementId}/PSUorPAU/{userId}": 'abstractGETrequest',
+    "DELETE /payments/requirement/{requirementId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 
     "POST /paymentConsents/taxRequirement":'postTaxRequirementConsent',
     "PUT /paymentConsents/taxRequirement/createExternalRepresentation": 'putTaxRequirementConsentExternalRepresentation',
@@ -209,10 +230,23 @@ const functionMappings = {
     "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
     "POST /payments/taxRequirement":'postTaxRequirementPayment',
-    "GET /payments/taxRequirement/{taxRequirementConsentId}": 'abstractGETrequest',
-    "DELETE /payments/taxRequirement/{taxRequirementConsentId}": 'abstractDELETErequest',
-    "GET /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
-    "DELETE /payments/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+    "GET /payments/taxRequirement/{taxRequirementId}": 'abstractGETrequest',
+    "DELETE /payments/taxRequirement/{taxRequirementId}": 'abstractDELETErequest',
+    "GET /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}": 'abstractGETrequest',
+    "DELETE /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+
+    "POST /paymentConsents/VRP":'postVRPConsent',
+    "PUT /paymentConsents/VRP/createExternalRepresentation": 'putVRPConsentExternalRepresentation',
+    "PATCH /paymentConsents/VRP":'patchVRPConsent',
+    "GET /paymentConsents/VRP/{VRPConsentId}": 'abstractGETrequest',
+    "DELETE /paymentConsents/VRP/{VRPConsentId}": 'abstractDELETErequest',
+    "GET /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}": 'abstractGETrequest',
+    "DELETE /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+    "POST /payments/VRP":'postVRPPayment',
+    "GET /payments/VRP/{VRPId}": 'abstractGETrequest',
+    "DELETE /payments/VRP/{VRPId}": 'abstractDELETErequest',
+    "GET /payments/VRP/{VRPId}/PSUorPAU/{userId}": 'abstractGETrequest',
+    "DELETE /payments/VRP/{VRPId}/PSUorPAU/{userId}": 'abstractDELETErequest',
 };
 
 
@@ -349,6 +383,7 @@ app.post('/api/execute/:functionName', async (req, res) => {
         req.session.config = { ...PISPauth.defaultConfig };
     }
     const { functionName } = req.params;
+    console.log(functionName)
     let { requestBody, enabledHeaders = [] } = req.body;
 
     try {
@@ -632,24 +667,18 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
                     'listAccounts': 'listAccountsConsentId',
                     'listPassports': 'listPassportsConsentId',
                     'requirement': 'requirementConsentId',
-                    'taxRequirement': 'taxRequirementConsentId'
+                    'taxRequirement': 'taxRequirementConsentId',
+                    'VRP': 'VRPConsentId'
                 };
                 const idField = consentIdMap[paymentType];
-                // Check if data has the consentId directly or wrapped in another data object
                 const consentData = createConsentResult.data.data || createConsentResult.data;
                 consentId = consentData[idField] || consentData.consentId || 'unknown';
             }
             
-            // Pass the path as a STRING directly to abstractGETrequest
             const path = `/accountsList/login/${login}/paymentConsents/${consentId}`;
-            // abstractGETrequest expects (config, requestBody, headers)
-            // requestBody should be the path string
-            // Clear breadcrumbId before call
             config.breadcrumbId = null;
-            // Clear lastStatusCode before call
             config.lastStatusCode = null;
             const result = await PISPauth.abstractGETrequest(config, String(path), ['application/json']);
-            // Capture breadcrumbId and statusCode from config
             const responseHeaders = {};
             const statusCode = config.lastStatusCode || null;
             if (config.breadcrumbId) {
@@ -666,7 +695,7 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             }
             // Call user-defined function with abstractGetRequest data and paymentType
             const userResult = await PISPauth.prepareExternalRepresentationBody(preparedBody, paymentType);
-            return { success: true, data: userResult };
+            return { success: true, data: userResult, statusCode: null };
         }
         
         if (funcName.startsWith('put') && funcName.endsWith('ConsentExternalRepresentation')) {
@@ -714,7 +743,7 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             
             // Call user-defined function to prepare special part body
             const userResult = await PISPauth.prepareExternalRepresentationSpecialPartBody(config, baseBody);
-            return { success: true, data: userResult };
+            return { success: true, data: userResult, statusCode: null };
         }
         
         if (funcName === 'putConsentExternalRepresentationSpecialPart') {
@@ -746,14 +775,15 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             const putExtRepResult = results.find(r => r.name.endsWith('ConsentExternalRepresentation') && r.name.startsWith('put'));
             const prepSpecialPartResult = results.find(r => r.name === 'prepareExternalRepresentationSpecialPartBody');
             const putSpecialPartResult = results.find(r => r.name === 'putConsentExternalRepresentationSpecialPart');
+            const createConsentResult = results.find(r => r.name.includes('Consent') && !r.name.includes('patch') && !r.name.includes('put'))
             
             const body1 = (prepBodyResult && prepBodyResult.data) ? prepBodyResult.data : {};
             const body2 = (putExtRepResult && putExtRepResult.data) ? putExtRepResult.data : {};
             const body3 = (prepSpecialPartResult && prepSpecialPartResult.data) ? prepSpecialPartResult.data : {};
             const body4 = (putSpecialPartResult && putSpecialPartResult.data) ? putSpecialPartResult.data : {};
             
-            const userResult = await PISPauth.prepareAuthorisationBody(body1, body2, body3, body4);
-            return { success: true, data: userResult };
+            const userResult = await PISPauth.prepareAuthorisationBody(body1, body2, body3, body4, paymentType);
+            return { success: true, data: userResult, statusCode: null };
         }
         
         if (funcName.startsWith('patch') && funcName.endsWith('Consent')) {
@@ -763,10 +793,11 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             if (PISPauth[actualFunctionName]) {
                 const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'x-idempotency-key']);
                 const responseHeaders = {};
+                const statusCode = config.lastStatusCode || null;
                 if (config.breadcrumbId) {
                     responseHeaders.breadcrumbId = config.breadcrumbId;
                 }
-                return { success: true, data: result, headers: responseHeaders };
+                return { success: true, data: result, headers: responseHeaders, statusCode };
             }
             return { success: false, error: `Function ${actualFunctionName} not found` };
         }
@@ -783,7 +814,7 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             // Call user-defined function to prepare payments body
             // Parameters: type, reqConsent (POST body), resConsent (PATCH response body)
             const userResult = await PISPauth.preparePaymentsBody(paymentType, postConsentBody, patchConsentBody);
-            return { success: true, data: userResult };
+            return { success: true, data: userResult, statusCode: null };
         }
         
         if (funcName === 'createPayment') {
@@ -795,10 +826,11 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             if (PISPauth[actualFunctionName]) {
                 const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'x-api-key', 'x-idempotency-key']);
                 const responseHeaders = {};
+                const statusCode = config.lastStatusCode || null;
                 if (config.breadcrumbId) {
                     responseHeaders.breadcrumbId = config.breadcrumbId;
                 }
-                return { success: true, data: result, headers: responseHeaders };
+                return { success: true, data: result, headers: responseHeaders, statusCode };
             }
             return { success: false, error: `Function ${actualFunctionName} not found` };
         }
@@ -820,7 +852,8 @@ function buildSequence(paymentType, steps) {
         'listAccounts': 'ListAccounts',
         'listPassports': 'ListPassports',
         'requirement': 'Requirement',
-        'taxRequirement': 'TaxRequirement'
+        'taxRequirement': 'TaxRequirement',
+        'VRP': 'VRP'
     };
     
     const prefix = prefixMap[paymentType] || 'Domestic';

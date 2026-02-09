@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const formatJsonBtn = document.getElementById('format-json');
     const tabButtons = document.querySelectorAll('.menu-item[data-tab]');
     const tabContents = document.querySelectorAll('.tab-content');
-    const apiKeyInput = document.getElementById('api-key');
     const headersList = document.getElementById('headers-list');
 
     
@@ -80,10 +79,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 'listAccounts': 'List Accounts',
                 'listPassports': 'List Passports',
                 'requirement': 'Requirements',
-                'taxRequirement': 'Requirements Tax'
+                'taxRequirement': 'Requirements Tax',
+                'VRP': 'VRP'
             };
             
-            const groupOrder = ['tokens', 'common', 'domestic', 'domesticTax', 'listAccounts', 'listPassports', 'requirement', 'taxRequirement'];
+            const groupOrder = ['tokens', 'common', 'domestic', 'domesticTax', 'listAccounts', 'listPassports', 'requirement', 'taxRequirement', 'VRP'];
 
             groupOrder.forEach(groupName => {
                 if (data.groups[groupName] && data.groups[groupName].length > 0) {
@@ -227,11 +227,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             
-            if (context.enabledHeaders && context.enabledHeaders.includes('x-api-key') && context.apiKey) {
-                apiKeyInput.value = context.apiKey;
-            }
-
-            
             if (context.lastResult) {
                 try {
                     const formattedResult = typeof context.lastResult === 'string'
@@ -269,15 +264,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const enabledHeaders = Array.from(document.querySelectorAll('#headers-list input[type="checkbox"]:checked'))
                 .map(checkbox => checkbox.name);
             
-            const responseText = editors.response.getValue();
-
-            
-            const apiKeyCheckbox = document.querySelector('input[name="x-api-key"]');
-            if (apiKeyCheckbox.checked && apiKeyInput.value) {
-                enabledHeaders.push('x-api-key');
-            } else {
-                enabledHeaders.push('authorization');
+            // Add debtorIdentification if selected
+            const debtorId = getDebtorIdentificationValue('#headers-list');
+            if (debtorId) {
+                enabledHeaders.push(debtorId);
             }
+            
+            const responseText = editors.response.getValue();
 
             await fetch(`/api/context/${encodeURIComponent(funcName)}`, {
                 method: 'POST',
@@ -287,7 +280,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     body,
                     enabledHeaders,
-                    apiKey: apiKeyInput.value,
                     lastResult: responseText
                 }),
                 credentials: 'include'
@@ -298,31 +290,52 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     
+    // Get apikey or access_token from config based on checkbox
+    function getAuthValue() {
+        const enabledHeaders = Array.from(document.querySelectorAll('#headers-list input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.name);
+        
+        const config = JSON.parse(editors.config.getValue() || '{}');
+        
+        if (enabledHeaders.includes('x-api-key')) {
+            return { type: 'x-api-key', value: config.apikey || '' };
+        } else {
+            return { type: 'authorization', value: config.access_token || '' };
+        }
+    }
+    
     async function executeFunction() {
     if (!currentFunction) return;
     try {
         
         responseStatus.textContent = 'Executing...';
         responseStatus.className = 'status-value loading';
+        
+        // Show loading gif
+        const loadingGif = document.getElementById('loading-gif');
+        if (loadingGif) {
+            loadingGif.style.display = 'inline';
+        }
+        
         executeBtn.disabled = true;
         
         const requestBody = editors.request.getValue();
         
+        const auth = getAuthValue();
+        const headers = {};
+        
+        if (auth.value) {
+            headers[auth.type] = auth.value;
+        }
+        
+        // Get enabled headers including debtorIdentification
         const enabledHeaders = Array.from(document.querySelectorAll('#headers-list input[type="checkbox"]:checked'))
             .map(checkbox => checkbox.name);
         
-        const headers = {};
-
-        if (enabledHeaders.includes('x-api-key') && apiKeyInput.value) {
-            headers['x-api-key'] = apiKeyInput.value;
-            const currentConfig = JSON.parse(editors.config.getValue() || '{}');
-            currentConfig.apikey = apiKeyInput.value;
-            editors.config.setValue(JSON.stringify(currentConfig, null, 2));
-        } else if (apiKeyInput.value) {
-            headers['authorization'] = apiKeyInput.value;
-            const currentConfig = JSON.parse(editors.config.getValue() || '{}');
-            currentConfig.access_token = apiKeyInput.value;
-            editors.config.setValue(JSON.stringify(currentConfig, null, 2));
+        // Add debtorIdentification if selected
+        const debtorId = getDebtorIdentificationValue('#headers-list');
+        if (debtorId) {
+            enabledHeaders.push(debtorId);
         }
         
         const response = await fetch(`/api/execute/${encodeURIComponent(currentFunction)}`, {
@@ -333,8 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
                 requestBody: requestBody, 
-                enabledHeaders,
-                apiKey: apiKeyInput.value
+                enabledHeaders: enabledHeaders
             }),
             credentials: 'include'
         });
@@ -353,12 +365,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!response.ok) {
             throw new Error(result.error || 'Unknown error occurred');
         }
+        
+        // Update access_token in config if token function
         if (currentFunction.toLowerCase().includes('token') && result.data && typeof result.data === 'object' && result.data.access_token) {
-            const apiKeyInput = document.getElementById('api-key');
-            if (apiKeyInput) {
-                apiKeyInput.value = result.data.access_token;
-            }
-            
             try {
                 const configEditor = document.getElementById('config-editor'); 
                 if (configEditor) {
@@ -369,30 +378,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 console.error('Error updating config editor:', e);
             }
+            
+            updateConfigDisplay({ access_token: result.data.access_token });
         }
-        if (currentFunction && currentFunction.toLowerCase().includes('token') && result && result.data && typeof result.data === 'object' && result.data.access_token) {
-            const apiKeyInput = document.getElementById('api-key');
-            if (apiKeyInput) {
-                    apiKeyInput.value = result.data.access_token;
-            }
-        
-        updateConfigDisplay({ access_token: result.data.access_token });
-    }
-
-    if (result && result.data) {
-    
-    if (enabledHeaders.includes('x-api-key') && apiKeyInput.value) {
-        const currentConfig = JSON.parse(editors.config.getValue() || '{}');
-        currentConfig.apikey = apiKeyInput.value;
-        editors.config.setValue(JSON.stringify(currentConfig, null, 2));
-    }
-    
-    else if (enabledHeaders.includes('authorization') && apiKeyInput.value) {
-        const currentConfig = JSON.parse(editors.config.getValue() || '{}');
-        currentConfig.access_token = apiKeyInput.value;
-        editors.config.setValue(JSON.stringify(currentConfig, null, 2));
-    }
-    }
         
         responseStatus.textContent = 'Success';
         responseStatus.className = 'status-value success';
@@ -435,10 +423,31 @@ document.addEventListener('DOMContentLoaded', function() {
         responseStatus.className = 'status-value error';
         editors.response.setValue(`Error: ${error.message}\n\n${error.stack || ''}`);
     } finally {
+        // Hide loading gif
+        const loadingGif = document.getElementById('loading-gif');
+        if (loadingGif) {
+            loadingGif.style.display = 'none';
+        }
         executeBtn.disabled = false;
     }
     }
 
+    
+    // ==================== LOADER FUNCTIONS ====================
+    
+    function showLoader() {
+        const loader = document.getElementById('sequence-loading');
+        if (loader) {
+            loader.style.display = 'flex';
+        }
+    }
+    
+    function hideLoader() {
+        const loader = document.getElementById('sequence-loading');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    }
     
     // ==================== SEQUENCE FUNCTIONS ====================
     
@@ -464,6 +473,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+
+        // Setup debtorIdentification radio behavior (Functions tab)
+        setupDebtorIdentificationRadios('#headers-list');
+        
+        // Setup debtorIdentification radio behavior (Sequence tab)
+        setupDebtorIdentificationRadios('#sequence-headers-list');
+    }
+
+    // Setup debtorIdentification checkboxes to behave like radio buttons
+    function setupDebtorIdentificationRadios(containerId) {
+        const container = document.querySelector(containerId);
+        if (!container) return;
+        
+        const privateCheckbox = container.querySelector('input[value="privateIdentification"]');
+        const organisationCheckbox = container.querySelector('input[value="organisationIdentification"]');
+        
+        if (privateCheckbox && organisationCheckbox) {
+            privateCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    organisationCheckbox.checked = false;
+                }
+            });
+            
+            organisationCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    privateCheckbox.checked = false;
+                }
+            });
+        }
+    }
+
+    // Get debtorIdentification value from checkboxes
+    function getDebtorIdentificationValue(containerId) {
+        const container = document.querySelector(containerId);
+        if (!container) return null;
+        
+        const privateCheckbox = container.querySelector('input[value="privateIdentification"]');
+        const organisationCheckbox = container.querySelector('input[value="organisationIdentification"]');
+        
+        if (privateCheckbox && privateCheckbox.checked) {
+            return 'privateIdentification';
+        }
+        if (organisationCheckbox && organisationCheckbox.checked) {
+            return 'organisationIdentification';
+        }
+        return null;
     }
 
     // Get selected payment type
@@ -505,6 +560,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             headers.push(headerName);
         });
+
+        // Add debtorIdentification if selected
+        const debtorId = getDebtorIdentificationValue('#sequence-headers-list');
+        if (debtorId) {
+            headers.push(debtorId);
+        }
 
         return headers;
     }
@@ -638,8 +699,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear previous results
         const resultsContainer = document.getElementById('sequence-results');
         if (resultsContainer) {
-            resultsContainer.innerHTML = '<div class="no-results">Executing sequence...</div>';
+            resultsContainer.innerHTML = '';
         }
+
+        // Show loader
+        showLoader();
 
         try {
             const response = await fetch('/api/executeSequence', {
@@ -670,6 +734,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error executing sequence:', error);
             addSequenceResult('Error', false, null, error.message, null, null);
+        } finally {
+            hideLoader();
         }
     }
 
@@ -782,9 +848,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     
-    function resetConfig() {
+    async function resetConfig() {
         if (confirm('Are you sure you want to reset the configuration to default?')) {
-            editors.config.setValue('{}');
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.success && data.config) {
+                    editors.config.setValue(JSON.stringify(data.config, null, 2));
+                    showNotification('Configuration reset to default');
+                }
+            } catch (error) {
+                console.error('Error resetting config:', error);
+                editors.config.setValue('{}');
+            }
         }
     }
 
