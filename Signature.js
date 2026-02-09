@@ -19,8 +19,8 @@ async function generateSignature(config,methodType,methodUri,commonHeaders,proje
     let signBody = {
         "Auth":{
             "CryptoType":1,
-            "KeyID":"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-            "Password":"12345678"
+            "KeyID":config.subjectKeyIdentifier,
+            "Password":config.password || "12345678"
         },
         "DataB64": convertToBase64(headerB64 + "." + payloadB64),
         "OptAddAllCert":false,
@@ -69,10 +69,6 @@ async function generateHeader(config, commonHeaders){
   if (findAttribute(commonHeaders,"content-type")){
     headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("content-type")
   }
-  if (findAttribute(commonHeaders,"debtorIdentification")){
-    headerRaw.crit.push("http://openbanking.asb.by/debtorIdentification")
-    headerRaw["http://openbanking.asb.by/debtorIdentification"] = commonHeaders["debtorIdentification"]
-  }
   if(findAttribute(commonHeaders,"x-fapi-auth-date")){
     headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("x-fapi-auth-date")
   }
@@ -81,6 +77,14 @@ async function generateHeader(config, commonHeaders){
   }
   if(findAttribute(commonHeaders,"x-fapi-interaction-id")){
     headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("x-fapi-interaction-id")
+  }
+  if(findAttribute(commonHeaders,"http://openbanking.asb.by/debtorIdentification")){
+    headerRaw.crit.push("http://openbanking.asb.by/debtorIdentification")
+    if(commonHeaders["http://openbanking.asb.by/debtorIdentification"] == "organisationIdentification"){
+        headerRaw["http://openbanking.asb.by/debtorIdentification"] = "organisationIdentification"
+    } else {
+        headerRaw["http://openbanking.asb.by/debtorIdentification"] = "privateIdentification"
+    }
   }
   headerRaw["http://openbanking.asb.by/signedData"].pars.sort()
   return sortObjectAlphabetically(headerRaw)
@@ -272,6 +276,12 @@ async function getPayloadByMethodRouteNew(config, methodType,methodUrl,commonHea
     }
     if (findAttribute(commonHeaders,"x-fapi-interaction-id")){
         body.pars["x-fapi-interaction-id"] = commonHeaders["x-fapi-interaction-id"]
+    }
+    if(findAttribute(commonHeaders,"privateIdentification")){
+        body.pars["http://openbanking.asb.by/debtorIdentification"]["pars"].push("http://openbanking.asb.by/privateIdentification")
+    }
+    if(findAttribute(commonHeaders,"organisationIdentification")){
+        body.pars["http://openbanking.asb.by/organisationIdentification"]["pars"].push("http://openbanking.asb.by/organisationIdentification")
     }
     return sortObjectAlphabetically(body)
 }
