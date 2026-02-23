@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveConfigBtn = document.getElementById('save-config');
     const resetConfigBtn = document.getElementById('reset-config');
     const formatJsonBtn = document.getElementById('format-json');
+    const validateSchemaBtn = document.getElementById('validate-schema');
     const tabButtons = document.querySelectorAll('.menu-item[data-tab]');
     const tabContents = document.querySelectorAll('.tab-content');
     const headersList = document.getElementById('headers-list');
@@ -171,6 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         
         await loadFunctionContext(funcName);
+
+        
+        switchTab('functions');
     }
 
     
@@ -851,7 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function resetConfig() {
         if (confirm('Are you sure you want to reset the configuration to default?')) {
             try {
-                const response = await fetch('/api/config', {
+                const response = await fetch('/api/config/default', {
                     method: 'GET',
                     credentials: 'include'
                 });
@@ -882,6 +886,68 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             showNotification(`Error formatting JSON: ${error.message}`, 'error');
+        }
+    }
+
+    // Validate JSON by Schema
+    async function validateBySchema() {
+        if (!currentFunction) {
+            showNotification('Please select a function first', 'error');
+            return;
+        }
+
+        const jsonBody = editors.request.getValue();
+        if (!jsonBody.trim()) {
+            showNotification('Request body is empty', 'error');
+            return;
+        }
+
+        // Validate JSON syntax first
+        try {
+            JSON.parse(jsonBody);
+        } catch (error) {
+            showNotification('Invalid JSON syntax in request body', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    functionName: currentFunction,
+                    jsonBody: jsonBody
+                }),
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+            
+            const validationResultDiv = document.getElementById('validation-result');
+            if (validationResultDiv) {
+                validationResultDiv.style.display = 'block';
+                
+                if (result.valid) {
+                    validationResultDiv.className = 'validation-result valid';
+                    validationResultDiv.innerHTML = `<div class="validation-title">✓ ${result.message}</div>`;
+                } else {
+                    validationResultDiv.className = 'validation-result invalid';
+                    let errorsHtml = '';
+                    if (result.errors && result.errors.length > 0) {
+                        errorsHtml = '<div class="validation-errors"><strong>Errors:</strong>';
+                        result.errors.forEach(err => {
+                            errorsHtml += `<div class="validation-error-item">${err.instancePath}: ${err.message}</div>`;
+                        });
+                        errorsHtml += '</div>';
+                    }
+                    validationResultDiv.innerHTML = `<div class="validation-title">✗ ${result.message}</div>${errorsHtml}`;
+                }
+            }
+        } catch (error) {
+            console.error('Error validating schema:', error);
+            showNotification(`Error: ${error.message}`, 'error');
         }
     }
 
@@ -955,6 +1021,10 @@ document.addEventListener('DOMContentLoaded', function() {
         saveConfigBtn.addEventListener('click', saveConfig);
         resetConfigBtn.addEventListener('click', resetConfig);
         formatJsonBtn.addEventListener('click', formatJson);
+        
+        if (validateSchemaBtn) {
+            validateSchemaBtn.addEventListener('click', validateBySchema);
+        }
 
         
         const sequenceFormatJsonBtn = document.getElementById('sequence-format-json');
@@ -968,11 +1038,32 @@ document.addEventListener('DOMContentLoaded', function() {
             sequenceExecuteBtn.addEventListener('click', executeSequence);
         }
 
-        tabButtons.forEach(btn => {
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchTab(btn.dataset.tab);
+        });
+    });
+
+    // ReadME sub-tabs functionality
+    const readmeSubtabBtns = document.querySelectorAll('.readme-subtab-btn');
+    const readmeSubtabContents = document.querySelectorAll('.readme-subtab-content');
+
+    if (readmeSubtabBtns.length > 0) {
+        readmeSubtabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                switchTab(btn.dataset.tab);
+                const subtab = btn.dataset.subtab;
+
+                // Update button states
+                readmeSubtabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update content visibility
+                readmeSubtabContents.forEach(content => {
+                    content.classList.toggle('active', content.id === subtab);
+                });
             });
         });
+    }
 
         window.addEventListener('beforeunload', () => {
             if (currentFunction) {

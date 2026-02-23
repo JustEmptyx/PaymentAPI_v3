@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const session = require('express-session');
+const Ajv = require('ajv');
+const fs = require('fs');
 
 const PISPauth = require('../PISPauthNew');
 const defaultBodies = require('../defaultBodies');
@@ -12,9 +14,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({origin: true,credentials: true}));
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json())
+app.use(express.json({ limit: '50mb' }))
 app.use(session({
     secret: 'Softclub', 
     resave: false,
@@ -348,6 +350,10 @@ app.get('/api/config', (req, res) => {
     res.json({ success: true, config: req.session.config });
 });
 
+app.get('/api/config/default', (req, res) => {
+    res.json({ success: true, config: PISPauth.defaultConfig });
+});
+
 app.post('/api/config', (req, res) => {
     debugger;
     try {
@@ -426,8 +432,9 @@ app.post('/api/execute/:functionName', async (req, res) => {
         // Wrap the original function to capture headers
         const originalFunction = PISPauth[actualFunctionName];
         const wrappedFunction = async function(config, body, headers) {
-            // Clear breadcrumbId before call
+            // Clear breadcrumbId and lastStatusCode before call
             config.breadcrumbId = null;
+            config.lastStatusCode = null;
             const result = await originalFunction(config, body, headers);
             // Capture breadcrumbId from config or result
             if (config.breadcrumbId) {
@@ -459,10 +466,14 @@ app.post('/api/execute/:functionName', async (req, res) => {
         }
         functionContexts[functionName].lastResult = result;
 
+        // Get statusCode from config
+        const statusCode = req.session.config.lastStatusCode || null;
+
         res.json({
             success: true,
             data: result,
-            headers: responseHeaders
+            headers: responseHeaders,
+            statusCode: statusCode
         });
     } catch (error) {
         console.error(`Error executing ${functionName}:`, error);
@@ -970,6 +981,90 @@ function buildSequence(paymentType, steps) {
     return sequence;
 }
 
+// JSON Schema Validation Endpoint
+app.post('/api/validate', async (req, res) => {
+    const { functionName, jsonBody } = req.body;
+    
+    try {
+        // Check if function is POST, PUT, or PATCH
+        const httpMethod = functionName.split(' ')[0];
+        if (!['POST', 'PUT', 'PATCH'].includes(httpMethod)) {
+            return res.json({
+                valid: true,
+                message: 'Validation not required for GET/DELETE methods'
+            });
+        }
+        
+        // Load schemes mapping
+        const mappingPath = path.join(__dirname, '..', 'schemes-mapping.json');
+        let schemeMapping = {};
+        
+        if (fs.existsSync(mappingPath)) {
+            const mappingContent = fs.readFileSync(mappingPath, 'utf8');
+            schemeMapping = JSON.parse(mappingContent);
+        } else {
+            return res.json({
+                valid: false,
+                message: 'schemes-mapping.json not found'
+            });
+        }
+        
+        // Get scheme filename for this function
+        const schemeFilename = schemeMapping[functionName];
+        if (!schemeFilename) {
+            return res.json({
+                valid: true,
+                message: `No schema mapping found for ${functionName}`
+            });
+        }
+        
+        // Load the schema
+        const schemePath = path.join(__dirname, '..', 'schemes', schemeFilename);
+        if (!fs.existsSync(schemePath)) {
+            return res.json({
+                valid: false,
+                message: `Schema file not found: ${schemeFilename}`
+            });
+        }
+        
+        let schemaContent = fs.readFileSync(schemePath, 'utf8');
+        let schema = JSON.parse(schemaContent);
+        
+        // Remove $schema property to avoid meta-schema lookup issues
+        delete schema['$schema'];
+        
+        // Validate JSON against schema
+        const ajv = new Ajv({ 
+            allErrors: true,
+            strict: false
+        });
+        
+        const validate = ajv.compile(schema);
+        const valid = validate(JSON.parse(jsonBody));
+        
+        if (valid) {
+            return res.json({
+                valid: true,
+                message: 'JSON is valid'
+            });
+        } else {
+            const errors = validate.errors.map(err => {
+                return `${err.instancePath}: ${err.message}`;
+            }).join('\n');
+            
+            return res.json({
+                valid: false,
+                message: 'JSON is invalid',
+                errors: validate.errors
+            });
+        }
+    } catch (error) {
+        return res.json({
+            valid: false,
+            message: `Error: ${error.message}`
+        });
+    }
+});
 
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
