@@ -39,17 +39,18 @@ async function generateSignature(config,methodType,methodUri,commonHeaders,proje
 }
 
 async function generateHeader(config, commonHeaders){
+  const baseUrl = config.baseUrl || "http://openbanking.asb.by";
   let headerRaw = {"alg": "BIGNS128",
   "crit": [
-    "http://openbanking.asb.by/asn1",
-    "http://openbanking.asb.by/crptPrvdr",
-    "http://openbanking.asb.by/signDtTm",
-    "http://openbanking.asb.by/signedData",
+    baseUrl + "/asn1",
+    baseUrl + "/crptPrvdr",
+    baseUrl + "/signDtTm",
+    baseUrl + "/signedData",
   ],
-  "http://openbanking.asb.by/asn1": true,
-  "http://openbanking.asb.by/crptPrvdr": 1,
-  "http://openbanking.asb.by/signDtTm": unixDate.getISOWithTimeZone(unixDate.getDateNsecondsAgo(-10800)),
-  "http://openbanking.asb.by/signedData": {
+  [baseUrl + "/asn1"]: true,
+  [baseUrl + "/crptPrvdr"]: 1,
+  [baseUrl + "/signDtTm"]: unixDate.getISOWithTimeZone(unixDate.getDateNsecondsAgo(-10800)),
+  [baseUrl + "/signedData"]: {
     "pars": [
       "@method",
       "@target-uri",
@@ -58,35 +59,36 @@ async function generateHeader(config, commonHeaders){
   },
   "typ": "JOSE"}
   if (findAttribute(commonHeaders,"x-api-key")){
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("x-api-key")
+    headerRaw[baseUrl + "/signedData"]["pars"].push("x-api-key")
   }
   if (findAttribute(commonHeaders,"authorization")){
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("authorization")
+    headerRaw[baseUrl + "/signedData"]["pars"].push("authorization")
   }
   if (findAttribute(commonHeaders,"x-idempotency-key")){
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("x-idempotency-key")
+    headerRaw[baseUrl + "/signedData"]["pars"].push("x-idempotency-key")
   }
   if (findAttribute(commonHeaders,"content-type")){
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("content-type")
+    headerRaw[baseUrl + "/signedData"]["pars"].push("content-type")
   }
   if(findAttribute(commonHeaders,"x-fapi-auth-date")){
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("x-fapi-auth-date")
+    headerRaw[baseUrl + "/signedData"]["pars"].push("x-fapi-auth-date")
   }
   if(findAttribute(commonHeaders,"x-fapi-customer-ip-address")){
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("x-fapi-customer-ip-address")
+    headerRaw[baseUrl + "/signedData"]["pars"].push("x-fapi-customer-ip-address")
   }
   if(findAttribute(commonHeaders,"x-fapi-interaction-id")){
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"].push("x-fapi-interaction-id")
+    headerRaw[baseUrl + "/signedData"]["pars"].push("x-fapi-interaction-id")
   }
-  if(findAttribute(commonHeaders,"http://openbanking.asb.by/debtorIdentification")){
-    headerRaw.crit.push("http://openbanking.asb.by/debtorIdentification")
-    if(commonHeaders["http://openbanking.asb.by/debtorIdentification"] == "organisationIdentification"){
-        headerRaw["http://openbanking.asb.by/debtorIdentification"] = "organisationIdentification"
+  const debtorIdentificationHeader = baseUrl + "/debtorIdentification";
+  if(findAttribute(commonHeaders, debtorIdentificationHeader)){
+    headerRaw.crit.push(debtorIdentificationHeader)
+    if(commonHeaders[debtorIdentificationHeader] == "organisationIdentification"){
+        headerRaw[debtorIdentificationHeader] = "organisationIdentification"
     } else {
-        headerRaw["http://openbanking.asb.by/debtorIdentification"] = "privateIdentification"
+        headerRaw[debtorIdentificationHeader] = "privateIdentification"
     }
   }
-  headerRaw["http://openbanking.asb.by/signedData"].pars.sort()
+  headerRaw[baseUrl + "/signedData"].pars.sort()
   return sortObjectAlphabetically(headerRaw)
 }
 
@@ -277,11 +279,14 @@ async function getPayloadByMethodRouteNew(config, methodType,methodUrl,commonHea
     if (findAttribute(commonHeaders,"x-fapi-interaction-id")){
         body.pars["x-fapi-interaction-id"] = commonHeaders["x-fapi-interaction-id"]
     }
+    const baseUrl = config.baseUrl || "http://openbanking.asb.by";
     if(findAttribute(commonHeaders,"privateIdentification")){
-        body.pars["http://openbanking.asb.by/debtorIdentification"]["pars"].push("http://openbanking.asb.by/privateIdentification")
+        body.pars[baseUrl + "/debtorIdentification"] = body.pars[baseUrl + "/debtorIdentification"] || {pars: []};
+        body.pars[baseUrl + "/debtorIdentification"]["pars"].push(baseUrl + "/privateIdentification")
     }
     if(findAttribute(commonHeaders,"organisationIdentification")){
-        body.pars["http://openbanking.asb.by/organisationIdentification"]["pars"].push("http://openbanking.asb.by/organisationIdentification")
+        body.pars[baseUrl + "/organisationIdentification"] = body.pars[baseUrl + "/organisationIdentification"] || {pars: []};
+        body.pars[baseUrl + "/organisationIdentification"]["pars"].push(baseUrl + "/organisationIdentification")
     }
     return sortObjectAlphabetically(body)
 }
