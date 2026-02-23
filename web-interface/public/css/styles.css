@@ -832,3 +832,201 @@ body {
 .debtor-options .checkbox-container {
     padding: 6px 12px;
 }
+
+/* ReadME Tab Styles */
+.readme-container {
+    padding: 20px;
+    max-width: 1200px;
+}
+
+.readme-container h2 {
+    margin-bottom: 25px;
+    color: var(--text-color);
+    font-size: 1.5rem;
+}
+
+.readme-subtabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.readme-subtab-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-light);
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.readme-subtab-btn:hover {
+    color: var(--primary-color);
+    background-color: #f9fafb;
+}
+
+.readme-subtab-btn.active {
+    color: var(--primary-color);
+    background-color: #eef2ff;
+    border-color: var(--primary-color);
+}
+
+.readme-subtab-content {
+    display: none;
+}
+
+.readme-subtab-content.active {
+    display: block;
+}
+
+.readme-content {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.readme-content h3 {
+    margin-bottom: 20px;
+    color: var(--text-color);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.readme-content p {
+    color: var(--text-light);
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.readme-placeholder {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background-color: #f9fafb;
+    margin-top: 20px;
+}
+
+.readme-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+}
+
+.placeholder-text {
+    color: var(--text-light);
+    font-style: italic;
+    margin: 0;
+}
+
+.readme-content ul {
+    margin: 15px 0;
+    padding-left: 20px;
+}
+
+.readme-content li {
+    margin-bottom: 10px;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.readme-content code {
+    background-color: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.875em;
+}
+
+.readme-content pre {
+    background-color: #282a36;
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 15px 0;
+}
+
+.readme-content pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.readme-image-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.readme-list {
+    margin: 15px 0;
+    padding-left: 25px;
+}
+
+.readme-list li {
+    margin-bottom: 10px;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.readme-note {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 12px 15px;
+    margin: 15px 0;
+    border-radius: 0 6px 6px 0;
+    color: #92400e;
+}
+
+.readme-note strong {
+    color: #b45309;
+}
+
+/* Validation Result Styles */
+.validation-result {
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.validation-result.valid {
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #059669;
+}
+
+.validation-result.invalid {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+}
+
+.validation-result.error {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #d97706;
+}
+
+.validation-result .validation-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.validation-result .validation-errors {
+    margin-top: 8px;
+    padding-left: 15px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8125rem;
+    white-space: pre-wrap;
+}
+
+.validation-result .validation-error-item {
+    margin-bottom: 4px;
+}
