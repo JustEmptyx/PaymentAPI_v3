@@ -25,6 +25,9 @@
                     <div class="menu-item" data-tab="config">
                         <i class="icon">⚙️</i> Configuration
                     </div>
+                    <div class="menu-item" data-tab="readme">
+                        <i class="icon">📖</i> ReadME
+                    </div>
                 </div>
                 <div class="menu-section function-list-container" id="function-list-container">
                     <div class="menu-header">Available Functions</div>
@@ -54,11 +57,15 @@
                         <div class="section-header">
                             <span>Request</span>
                             <div class="section-actions">
+                                <button id="validate-schema" class="btn btn-outline" title="Validate JSON by Schema">
+                                    <i class="fas fa-check"></i> Validate by Schema
+                                </button>
                                 <button id="format-json" class="btn btn-outline" title="Format JSON (if valid)">
                                     <i class="fas fa-indent"></i> Format JSON
                                 </button>
                             </div>
                         </div>
+                        <div id="validation-result" class="validation-result" style="display: none;"></div>
                         <div class="editor-container">
                             <textarea id="request-body" class="code-editor" placeholder="Request body (JSON)"></textarea>
                         </div>
@@ -336,6 +343,148 @@
                     <div class="config-editor-container">
                         <div class="editor-container">
                             <textarea id="config-input" class="code-editor" placeholder="Configuration (JSON)">{}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ReadME Tab -->
+            <div id="readme-tab" class="tab-content">
+                <div class="readme-container">
+                    <h2>ReadME</h2>
+                    
+                    <!-- ReadME Sub-tabs -->
+                    <div class="readme-subtabs">
+                        <div class="readme-subtab-btn active" data-subtab="readme-functions">
+                            Functions
+                        </div>
+                        <div class="readme-subtab-btn" data-subtab="readme-sequence">
+                            Sequence
+                        </div>
+                        <div class="readme-subtab-btn" data-subtab="readme-configuration">
+                            Configuration
+                        </div>
+                    </div>
+
+                    <!-- ReadME Functions Content -->
+                    <div id="readme-functions" class="readme-subtab-content active">
+                        <div class="readme-content">
+                            <h3>Functions</h3>
+                            
+                            <p>Данный модуль необходим для тестирования отдельных функций Платежных API.</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/functions/func1.png" alt="Navigator Functions" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <p>При переходе на вкладку Functions в модуле Navigator появляется возможность выбора функций в списке Available Functions.</p>
+                            
+                            <p>Модуль Available Functions разделен на 9 зон: "Токены", "Общие функции", "Domestic", "Domestic Tax", "List Accounts", "List Passports", "Requirements", "Requirements Tax", "VRP".</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/functions/func2.png" alt="Available Functions Zones" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <h4>Рассмотрим интерфейс отдельно взятой функции на примере Domestic → POST /paymentConsents/domestic</h4>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/functions/func3.png" alt="Function Interface" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <p>Зона выполнения любой функции поделена на 4 подзоны:</p>
+                            
+                            <ol class="readme-list">
+                                <li><strong>Зона выполнения</strong> — в данной зоне имеется информация о названии роута, кнопка "Execute" для вызова метода.</li>
+                                <li><strong>Зона тела запроса</strong> — в данной зоне должно находиться тело запроса, имеется кнопка "Format JSON", которая позволяет форматировать JSON документ в поле ввода.</li>
+                                <li><strong>Зона тела ответа</strong> — в данной зоне находится тело ответа на запрос и статус результата работы приложения. Например, Status: success говорит о том, что запрос был успешно отправлен, отработал и был получен ответ.</li>
+                                <li><strong>Зона заголовков</strong> — в данной зоне находятся обязательные и необязательные заголовки, которые могут присутствовать в методах Платежных API. Для добавления (выбора) заголовка необходимо перевести чек-бокс в активное состояние:
+                                    <ul class="readme-list">
+                                        <li><code>x-fapi-interaction-id</code>, <code>x-idempotency-key</code> — генерируются случайно;</li>
+                                        <li><code>x-fapi-customer-ip-address</code> — получает актуальный IP-адрес;</li>
+                                        <li><code>x-fapi-auth-date</code> — получает актуальную дату;</li>
+                                        <li><code>Content-Type: application/json</code> — в активном состоянии получает значение "application/json;charset=utf-8", в неактивном — "application/xml;charset=utf-8";</li>
+                                        <li><code>x-api-key</code> — получает значение из конфига. Если находится в активном состоянии — забирает значение <code>apikey</code> из конфига, если в неактивном, то забирает значение <code>access_token</code>;</li>
+                                        <li><code>privateIdentification</code> и <code>organisationIdentification</code> — необходимы для идентификации типа бенефициара в том случае, если отсутствует атрибут <code>data.initiation.debtor</code>.</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                            
+                            <h4>GET, DELETE методы</h4>
+                            
+                            <p>Во всех методах с GET/DELETE типами HTTP запросов нет тела запроса. Вместо этого используется строка URL для идентификации метода. Например:</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/functions/func4.png" alt="GET Method Example" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <p>Будет произведен вызов метода <code>GET /paymentConsents/domestic/{domesticConsentId}</code>, где <code>domesticConsentId = 88cfcb0e-78ef-4636-bb4b-11c910510e79</code>.</p>
+                            
+                            <p>Для DELETE методов тело запроса и способ вызова аналогичны:</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/functions/func5.png" alt="DELETE Method Example" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <h4>Токены</h4>
+                            
+                            <p>При вызове методов Платежных API возникает возможность использования разных потоков авторизации. В данном приложении реализовано 4 метода для получения токенов: <code>GET PISPtoken</code>, <code>QPISPtoken</code>, <code>TPEtoken</code>, <code>OBtoken</code>. Для получения Bearer-токена используется блок "Токены".</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/functions/func6.png" alt="Tokens" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <p>Логин и пароль, необходимые для получения токенов, берутся из конфига.</p>
+                        </div>
+                    </div>
+
+                    <!-- ReadME Sequence Content -->
+                    <div id="readme-sequence" class="readme-subtab-content">
+                        <div class="readme-content">
+                            <h3>Sequence</h3>
+                            
+                            <p>Данный модуль необходим для выполнения "Цепочек запросов".</p>
+                            
+                            <p>Модуль разделен на 5 зон:</p>
+                            
+                            <ol class="readme-list">
+                                <li><strong>Зона типа платежа</strong> — в данной зоне находится 7 радиокнопок, которые представляют 7 типов платежей. При проведении "цепочки запросов" может быть выбран только 1 тип платежа.</li>
+                                <li><strong>Зона выбора шагов</strong> — в данной зоне присутствует вариант выбора этапов, необходимых для проведения платежа:
+                                    <ul class="readme-list">
+                                        <li><code>createConsent</code> — этап, отвечающий за создание согласия;</li>
+                                        <li><code>authoriseConsent</code> — этап, отвечающий за авторизацию согласия;</li>
+                                        <li><code>createPayment</code> — этап, отвечающий за создание платежного указания.</li>
+                                    </ul>
+                                    <p class="readme-note"><strong>Внимание!</strong> При выборе этапа <code>authoriseConsent</code> необходимо также выбрать этап <code>createConsent</code>, а при выборе этапа <code>createPayment</code> должны быть активны два предыдущих этапа.</p>
+                                </li>
+                                <li><strong>Зона тела запроса</strong> — в данной зоне должно находиться тело запроса, имеется кнопка "Format JSON", которая позволяет форматировать JSON документ в поле ввода "тело запроса".</li>
+                                <li><strong>Зона заголовков</strong> — в данной зоне находятся обязательные и необязательные заголовки, которые могут присутствовать в методах Платежных API. Для добавления (выбора) заголовка необходимо перевести чек-бокс в активное состояние:
+                                    <ul class="readme-list">
+                                        <li><code>x-fapi-interaction-id</code>, <code>x-idempotency-key</code> — генерируются случайно;</li>
+                                        <li><code>x-fapi-customer-ip-address</code> — получает актуальный IP-адрес;</li>
+                                        <li><code>x-fapi-auth-date</code> — получает актуальную дату;</li>
+                                        <li><code>Content-Type: application/json</code> — в активном состоянии получает значение "application/json;charset=utf-8", в неактивном — "application/xml;charset=utf-8";</li>
+                                        <li><code>x-api-key</code> — получает значение из конфига. Если находится в активном состоянии — забирает значение <code>apikey</code> из конфига, если в неактивном, то забирает значение <code>access_token</code>;</li>
+                                        <li><code>privateIdentification</code> и <code>organisationIdentification</code> — необходимы для идентификации типа бенефициара в том случае, если отсутствует атрибут <code>data.initiation.debtor</code>.</li>
+                                    </ul>
+                                    <p class="readme-note"><strong>Внимание!</strong> При выполнении "цепочек запросов" необходимо выбирать заголовки, нужные для работы методов "создания согласия", также необходимо использовать заголовок <code>Content-type: application/json</code>.</p>
+                                </li>
+                                <li><strong>Зона тела ответа</strong> — в данной зоне находятся тела запросов/ответов для методов, выполнение которых необходимо при выполнении "цепочки запросов", и статусы выполнения каждого отдельного метода.</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- ReadME Configuration Content -->
+                    <div id="readme-configuration" class="readme-subtab-content">
+                        <div class="readme-content">
+                            <h3>Configuration</h3>
+                            
+                            <p>Данный модуль необходим для настройки конфига приложения.</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/configuration/conf1.png" alt="Configuration Module" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <p class="readme-note">Описание и способы получения значений для конфига будут описаны позже.</p>
                         </div>
                     </div>
                 </div>
