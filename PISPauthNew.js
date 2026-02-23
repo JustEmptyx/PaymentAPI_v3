@@ -12,15 +12,16 @@ const {scCryptoSign,scCryptoHash} = require('./cryptoManager')
 const{convertToBase64, convertToBase64URL, convertBase64UrlToBase64, convertBase64ToBase64Url, decodeBase64, decodeBase64Url} = require('./base64converter')
 const fs = require("fs");
 const {unixDate,UnixDate,addYearsToDate,subtractYearsFromDate} = require('./dateModule')
-const {format} = require("date-fns");
+const { format,addMinutes,addSeconds, addMilliseconds } = require("date-fns");
+const { formatInTimeZone } = require("date-fns-tz");
 const {getClientAssertion,createTokenWithClientAssertion} = require("./clientSecretJWTAuth")
 const {stringify} = require("uuid");
-
 let defaultConfig = {
     alg: "BELTM256",
     typ: "JOSE",
     url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
     url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
+    baseUrl: "http://openbanking.asb.by",
     client_id_pisp: "PISP2TEST",
     client_secret_pisp: "Cgxb4O9UWS4HZwrpbf3bfefdrZTStubt",
     client_id_qpisp: "BELKARTPAY_NPC_TEST",
@@ -29,7 +30,7 @@ let defaultConfig = {
     client_secret_tpe: "Nisll6ytlAAtYGqb7W1Kus539rfLAZuP",
     client_id_dbo: "digitalChannels",
     client_secret_dbo: "rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
-    apikey: "dcbeebf6-1d34-4bb0-82cf-bcfe185e037f",
+    apikey: "6026812e-3e2e-4d8d-9f86-c0128223b7df",
     client_otp: "asb123",
     mobile_number: "+375-255427989",
     access_token: "",
@@ -124,20 +125,21 @@ async function createDboClientToken(config = {}, body = {}, enabledHeaders = [])
 
 async function generateHeader(config, additionalInfo){
   let headerRaw
+  const baseUrl = config.baseUrl || "http://openbanking.asb.by";
 
   if(authType == "OBclientCredentials") {
   headerRaw = {"alg": "BIGNS128",
   "crit": [
-    "http://openbanking.asb.by/asn1",
-    "http://openbanking.asb.by/crptPrvdr",
-    "http://openbanking.asb.by/signDtTm",
-    "http://openbanking.asb.by/signedData",
-    // "http://openbanking.asb.by/debtorIdentification"
+    baseUrl + "/asn1",
+    baseUrl + "/crptPrvdr",
+    baseUrl + "/signDtTm",
+    baseUrl + "/signedData",
+    // baseUrl + "/debtorIdentification"
   ],
-  "http://openbanking.asb.by/asn1": true,
-  "http://openbanking.asb.by/crptPrvdr": 1,
-  "http://openbanking.asb.by/signDtTm": unixDate.getISOWithTimeZone(unixDate.getDateNsecondsAgo(-10800)),
-  "http://openbanking.asb.by/signedData": {
+  [baseUrl + "/asn1"]: true,
+  [baseUrl + "/crptPrvdr"]: 1,
+  [baseUrl + "/signDtTm"]: unixDate.getISOWithTimeZone(unixDate.getDateNsecondsAgo(-10800)),
+  [baseUrl + "/signedData"]: {
     "pars": [
       "@method",
       "@target-uri",
@@ -150,21 +152,21 @@ async function generateHeader(config, additionalInfo){
       "x-idempotency-key"
     ]
   },
-  // "http://openbanking.asb.by/debtorIdentification":"organisationIdentification",
+  // baseUrl + "/debtorIdentification":"organisationIdentification",
   "typ": "JOSE"}
   } else {
   headerRaw = {"alg": "BIGNS128",
   "crit": [
-    "http://openbanking.asb.by/asn1",
-    "http://openbanking.asb.by/crptPrvdr",
-    "http://openbanking.asb.by/signDtTm",
-    "http://openbanking.asb.by/signedData",
-    // "http://openbanking.asb.by/debtorIdentification"
+    baseUrl + "/asn1",
+    baseUrl + "/crptPrvdr",
+    baseUrl + "/signDtTm",
+    baseUrl + "/signedData",
+    // baseUrl + "/debtorIdentification"
   ],
-  "http://openbanking.asb.by/asn1": true,
-  "http://openbanking.asb.by/crptPrvdr": 1,
-  "http://openbanking.asb.by/signDtTm": unixDate.getISOWithTimeZone(unixDate.getDateNsecondsAgo(-10800)),
-  "http://openbanking.asb.by/signedData": {
+  [baseUrl + "/asn1"]: true,
+  [baseUrl + "/crptPrvdr"]: 1,
+  [baseUrl + "/signDtTm"]: unixDate.getISOWithTimeZone(unixDate.getDateNsecondsAgo(-10800)),
+  [baseUrl + "/signedData"]: {
     "pars": [
       "@method",
       "@target-uri",
@@ -177,18 +179,18 @@ async function generateHeader(config, additionalInfo){
       "x-idempotency-key"
     ]
   },
-  // "http://openbanking.asb.by/debtorIdentification":"privateIdentification",
+  // baseUrl + "/debtorIdentification":"privateIdentification",
   "typ": "JOSE"}
 }
   if(additionalInfo.includes("NoIdempotencyKey")){
-    let tempArr = headerRaw["http://openbanking.asb.by/signedData"]["pars"]
+    let tempArr = headerRaw[baseUrl + "/signedData"]["pars"]
     delete tempArr.splice(tempArr.indexOf("x-idempotency-key"),1)
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"] = tempArr
+    headerRaw[baseUrl + "/signedData"]["pars"] = tempArr
   }
   if(additionalInfo.includes("NoContentType")){
-    let tempArr = headerRaw["http://openbanking.asb.by/signedData"]["pars"]
+    let tempArr = headerRaw[baseUrl + "/signedData"]["pars"]
     delete tempArr.splice(tempArr.indexOf("content-type"),1)
-    headerRaw["http://openbanking.asb.by/signedData"]["pars"] = tempArr
+    headerRaw[baseUrl + "/signedData"]["pars"] = tempArr
   }
   return headerRaw
 }
@@ -243,19 +245,20 @@ async function makePOSTrequest(config,projectName,projectUrl,requestBody,enabled
     } else {
         commonHeaders["authorization"] = "Bearer " + config["access_token"]
     }
+    const debtorIdentificationHeader = (config.baseUrl || "http://openbanking.asb.by") + "/debtorIdentification";
     if (enabledHeaders.includes("privateIdentification")){
-        commonHeaders["http://openbanking.asb.by/debtorIdentification"] = "privateIdentification"
+        commonHeaders[debtorIdentificationHeader] = "privateIdentification"
     }
     if (enabledHeaders.includes("organisationIdentification")){
-        commonHeaders["http://openbanking.asb.by/debtorIdentification"] = "organisationIdentification"
+        commonHeaders[debtorIdentificationHeader] = "organisationIdentification"
     } 
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
     let signature = await si.generateSignature(config,"POST",projectUrl,commonHeaders,projectName,requestBodyName)
     await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
     commonHeaders['x-jws-signature'] = signature
     console.log(JSON.stringify(signature))
-    if(commonHeaders["http://openbanking.asb.by/debtorIdentification"]){
-        delete commonHeaders["http://openbanking.asb.by/debtorIdentification"];
+    if(commonHeaders[debtorIdentificationHeader]){
+        delete commonHeaders[debtorIdentificationHeader];
     }
     await appendToDefinedFile("logs.txt","headersList",JSON.stringify(commonHeaders))
     console.log(JSON.stringify(commonHeaders))
@@ -667,23 +670,58 @@ function renameKeyInObject(obj, oldKey, newKey) {
   return updatedObj;
 }
 
-async function createSpecialPartObject(config,imitIns){
-  const currentDate = new Date();
-  const formattedDate = format(currentDate, "yyyy-MM-dd'T'HH:mm:ssXXX");
-  currentDate.setMinutes(currentDate.getMinutes()+2)
-  const updatedFormattedDate = format(currentDate, "yyyy-MM-dd'T'HH:mm:ssXXX");
+// async function createSpecialPartObject(config,imitIns,requestBodyWithExternalRepresentation){
+//   const currentDate = new Date();
+//   const formattedDate = formatInTimeZone(currentDate, 'Europe/Minsk', "yyyy-MM-dd'T'HH:mm:ssXXX");
+//   currentDate.setMinutes(currentDate.getMinutes()+2)
+//   const updatedFormattedDate = formatInTimeZone(currentDate, 'Europe/Minsk', "yyyy-MM-dd'T'HH:mm:ssXXX");
+//   return {
+//     "specialPart":
+//         {
+//           "HMAC": imitIns,
+//           "OTP": config.client_otp,
+//           "OTPdateTime": formattedDate,
+//           "mobileNumber": config.mobile_number,
+//           "signatureDateTime": updatedFormattedDate,
+//           "status": "Authorised",
+//           "statusUpdateDateTime": formattedDate,
+//           "subjectKeyIdentifier": config.subjectKeyIdentifier
+//         }
+//   }
+// }
+
+async function createSpecialPartObject(config,imitIns,requestBodyWithExternalRepresentation){
+  // Получаем creationDateTime из requestBodyWithExternalRepresentation
+  const creationDateTimeStr = requestBodyWithExternalRepresentation.data.creationDateTime;
+  
+  // Парсим строку даты в объект Date
+  const creationDate = new Date(creationDateTimeStr);
+  
+  // Добавляем 1 минуту для OTPdateTime и statusUpdateDateTime
+  const dateTimePlus1Sec = addSeconds(creationDate, 1);
+  
+  // Добавляем 2 минуты для signatureDateTime
+  const dateTimePlus2Sec = addSeconds(creationDate, 2);
+  
+  // Форматируем даты обратно в тот же формат (yyyy-MM-dd'T'HH:mm:ssXXX)
+  const formatStr = "yyyy-MM-dd'T'HH:mm:ssXXX";
+  
+  const otpDateTime = formatInTimeZone(dateTimePlus1Sec, 'Europe/Minsk', formatStr);
+  const signatureDateTime = formatInTimeZone(dateTimePlus2Sec, 'Europe/Minsk', formatStr);
+  const statusUpdateDateTime = formatInTimeZone(dateTimePlus1Sec, 'Europe/Minsk', formatStr);
+  
   return {
     "specialPart":
-        {
-          "HMAC": imitIns,
-          "OTP": config.client_otp,
-          "OTPdateTime": formattedDate,
-          "mobileNumber": config.mobile_number,
-          "signatureDateTime": updatedFormattedDate,
-          "status": "Authorised",
-          "statusUpdateDateTime": formattedDate,
-          "subjectKeyIdentifier": config.subjectKeyIdentifier
-        }
+      {
+        "HMAC": imitIns,
+        "OTP": config.client_otp,
+        "OTPdateTime": otpDateTime,
+        "mobileNumber": config.mobile_number,
+        "signatureDateTime": signatureDateTime,
+        "status": "Authorised",
+        "statusUpdateDateTime": statusUpdateDateTime,
+        "subjectKeyIdentifier": config.subjectKeyIdentifier
+      }
   }
 }
 
@@ -1223,7 +1261,7 @@ async function prepareExternalRepresentationBody(body,type){
 async function prepareExternalRepresentationSpecialPartBody(config,requestBodyWithExternalRepresentation){
     debugger;
     let imitIns = await createImitationInsert(config,requestBodyWithExternalRepresentation)
-    let specPartObject = await createSpecialPartObject(config,imitIns.ResultB64)
+    let specPartObject = await createSpecialPartObject(config,imitIns.ResultB64,requestBodyWithExternalRepresentation)
     return specPartObject
 }
 
@@ -1280,14 +1318,21 @@ async function preparePaymentsBody(type, reqConsent, resConsent){
 }
 
 async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extReprSpecPart,type){
+    console.log("extRepr_fromprep\n"+JSON.stringify(extRepr))
+    console.log("specPart_fromprep\n"+JSON.stringify(specPart))
+    console.log("extReprSpecPart\n"+JSON.stringify(extReprSpecPart))
+    console.log("preparedAccList\n" + JSON.stringify(preparedAccList))
     if(preparedAccList.data.paymentConsentId){
         preparedAccList = renameKeyInObject(preparedAccList,"paymentConsentId","domesticConsentId")
     }
     let authorisationBody = preparedAccList
+    console.log("authorisationBody\n"+JSON.stringify(authorisationBody))
     authorisationBody.data.externalRepresentation = extRepr.data.externalRepresentation
+    console.log("authorisationBodyWithExtRepr\n"+JSON.stringify(authorisationBody))
     authorisationBody.specialPart = specPart.specialPart
+    console.log("authorisationBodyWithSpecPart\n"+JSON.stringify(authorisationBody))
     authorisationBody.specialPart.externalRepresentationSpecialPart = extReprSpecPart.data.externalRepresentationSpecialPart
-    
+    console.log("authorisationBodyWithSpecPartExtRepr\n"+JSON.stringify(authorisationBody))
     
     authorisationBody = sortObjectAlphabetically(authorisationBody)
     return authorisationBody
