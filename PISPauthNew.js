@@ -17,7 +17,7 @@ const { formatInTimeZone } = require("date-fns-tz");
 const {getClientAssertion,createTokenWithClientAssertion} = require("./clientSecretJWTAuth")
 const {stringify} = require("uuid");
 let defaultConfig = {
-    alg: "BELTM256",
+    alg: "BIGNS128",
     typ: "JOSE",
     url_kc: "https://sc-map-testversion-vip.softclub.by:7891/",
     url_swagger: "https://sc-map-testversion-vip.softclub.by:8008/",
@@ -31,7 +31,7 @@ let defaultConfig = {
     client_id_dbo: "digitalChannels",
     client_secret_dbo: "rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV",
     apikey: "6026812e-3e2e-4d8d-9f86-c0128223b7df",
-    client_otp: "asb123",
+    client_otp: "asb12345",
     mobile_number: "+375-255427989",
     access_token: "",
     subjectKeyIdentifier: "8627DBC521A8F18A4CDDD8D396949CC333ED762E",
@@ -199,30 +199,37 @@ const si= require("./Signature");
 const dateModule = require('./dateModule.js');
 
 async function makePOSTrequest(config,projectName,projectUrl,requestBody,enabledHeaders = []){
-    debugger;
     let requestBodyName = "POSTbody"
     await appendToDefinedFile("logs.txt","received requestBody",JSON.stringify(requestBody))
     setRequestBody(projectName,requestBodyName,sortObjectAlphabetically(requestBody))
     requestBody = getRequestBody(projectName, requestBodyName)
     await appendToDefinedFile("logs.txt","formatted requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody
-    if(requestBody){
-        cryptoHashBody = {
-            "Auth":{
-                "CryptoType":1,
-            },
-            "DataB64": convertToBase64(JSON.stringify(requestBody))
+    let commonHeaders = {}
+    if(enabledHeaders.includes("NoSignature")){
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
         }
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let commonHeaders = {
-        "content-type": "application/xml;charset=utf-8",
-        "accept": "application/xml;charset=utf-8",
-        "x-jws-signature": "",
-        "content-digest": "belt-hash256=:"+ hmac +":"
+    } else {
+        let cryptoHashBody
+        if(requestBody){
+            cryptoHashBody = {
+                "Auth":{
+                    "CryptoType":1,
+                },
+                "DataB64": convertToBase64(JSON.stringify(requestBody))
+            }
+        }
+        await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
+        let hmac = await scCryptoHash(config,cryptoHashBody)
+        hmac = hmac.ResultB64
+        await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
+            "x-jws-signature": "",
+            "content-digest": "belt-hash256=:"+ hmac +":"
+        }
     }
     if (enabledHeaders.includes("x-fapi-interaction-id")){
         commonHeaders["x-fapi-interaction-id"] = uuid.v4()
@@ -253,10 +260,12 @@ async function makePOSTrequest(config,projectName,projectUrl,requestBody,enabled
         commonHeaders[debtorIdentificationHeader] = "organisationIdentification"
     } 
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
-    let signature = await si.generateSignature(config,"POST",projectUrl,commonHeaders,projectName,requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    commonHeaders['x-jws-signature'] = signature
-    console.log(JSON.stringify(signature))
+    if(!enabledHeaders.includes("NoSignature")){
+        let signature = await si.generateSignature(config,"POST",projectUrl,commonHeaders,projectName,requestBodyName)
+        await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
+        commonHeaders['x-jws-signature'] = signature
+        console.log(JSON.stringify(signature))
+    }
     if(commonHeaders[debtorIdentificationHeader]){
         delete commonHeaders[debtorIdentificationHeader];
     }
@@ -300,20 +309,28 @@ async function makeGETrequest(config,projectName,projectUrl,requestBody,enabledH
     setRequestBody(projectName,requestBodyName,"")
     requestBody = getRequestBody(projectName, requestBodyName)
     await appendToDefinedFile("logs.txt","requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody
-    cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let commonHeaders = {
-        "x-jws-signature": "",
-        "content-digest": "belt-hash256=:"+ hmac +":"
+    let commonHeaders = {}
+    if(enabledHeaders.includes("NoSignature")){
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
+        }
+    } else {
+        let cryptoHashBody
+        cryptoHashBody = {
+            "Auth":{
+                "CryptoType":1,
+            },
+            "DataB64": ""
+        }
+        await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
+        let hmac = await scCryptoHash(config,cryptoHashBody)
+        hmac = hmac.ResultB64
+        await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
+        commonHeaders = {
+            "x-jws-signature": "",
+            "content-digest": "belt-hash256=:"+ hmac +":"
+        }
     }
     let requestContentType = enabledHeaders.includes("application/json")? "application/json;charset=utf-8": "application/xml;charset=utf-8"
     if (enabledHeaders.includes("x-fapi-interaction-id")){
@@ -338,10 +355,12 @@ async function makeGETrequest(config,projectName,projectUrl,requestBody,enabledH
         commonHeaders['authorization'] = "Bearer " + config["access_token"]
     }
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
-    let signature = await si.generateSignature(config,"GET",projectUrl,commonHeaders,projectName,requestBodyName,additionalInfo)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    commonHeaders['x-jws-signature'] = signature
-    console.log(JSON.stringify(signature))
+    if (!enabledHeaders.includes("NoSignature")){
+        let signature = await si.generateSignature(config,"GET",projectUrl,commonHeaders,projectName,requestBodyName,additionalInfo)
+        await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
+        commonHeaders['x-jws-signature'] = signature
+        console.log(JSON.stringify(signature))
+    }
     await appendToDefinedFile("logs.txt","headersList",JSON.stringify(commonHeaders))
     console.log(JSON.stringify(commonHeaders))
     console.log(config.url_swagger + "oapi-channel/open-banking/v1.0" + requestBody)
@@ -380,24 +399,33 @@ async function makePATCHrequest(config,projectName,projectUrl,requestBody,enable
     setRequestBody(projectName,requestBodyName,sortObjectAlphabetically(requestBody))
     requestBody = getRequestBody(projectName, requestBodyName)
     await appendToDefinedFile("logs.txt","formatted requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody
-    if(requestBody){
-        cryptoHashBody = {
-            "Auth":{
-                "CryptoType":1,
-            },
-            "DataB64": convertToBase64(JSON.stringify(requestBody))
+    let commonHeaders = {}
+    if(enabledHeaders.includes("NoSignature")){
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
+            "x-jws-signature": "",
         }
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let commonHeaders = {
-        "content-type": "application/xml;charset=utf-8",
-        "accept": "application/xml;charset=utf-8",
-        "x-jws-signature": "",
-        "content-digest": "belt-hash256=:"+ hmac +":"
+    } else {
+        let cryptoHashBody
+        if(requestBody){
+            cryptoHashBody = {
+                "Auth":{
+                    "CryptoType":1,
+                },
+                "DataB64": convertToBase64(JSON.stringify(requestBody))
+            }
+        }
+        await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
+        let hmac = await scCryptoHash(config,cryptoHashBody)
+        hmac = hmac.ResultB64
+        await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
+            "x-jws-signature": "",
+            "content-digest": "belt-hash256=:"+ hmac +":"
+        }
     }
     if (enabledHeaders.includes("x-fapi-interaction-id")){
         commonHeaders["x-fapi-interaction-id"] = uuid.v4()
@@ -421,10 +449,18 @@ async function makePATCHrequest(config,projectName,projectUrl,requestBody,enable
         commonHeaders["authorization"] = "Bearer " + config["access_token"]
     }
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
-    let signature = await si.generateSignature(config,"PATCH",projectUrl,commonHeaders,projectName,requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    commonHeaders['x-jws-signature'] = signature
-    console.log(JSON.stringify(signature))
+    if (enabledHeaders.includes("NoSignature")){
+        let signature = await si.generateSignatureAccounts(config,"PATCH",projectUrl,commonHeaders,projectName,requestBodyName)
+        await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
+        commonHeaders['x-jws-signature'] = signature
+        console.log(JSON.stringify(signature))
+    }
+    else{
+        let signature = await si.generateSignature(config,"PATCH",projectUrl,commonHeaders,projectName,requestBodyName)
+        await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
+        commonHeaders['x-jws-signature'] = signature
+        console.log(JSON.stringify(signature))
+    }
     await appendToDefinedFile("logs.txt","headersList",JSON.stringify(commonHeaders))
     console.log(JSON.stringify(commonHeaders))
     const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0" + projectUrl, {
@@ -463,21 +499,28 @@ async function makeDELETErequest(config,projectName,projectUrl,requestBody,enabl
     setRequestBody(projectName,requestBodyName,"")
     requestBody = getRequestBody(projectName, requestBodyName)
     await appendToDefinedFile("logs.txt","requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody
-    cryptoHashBody = {
-        "Auth":{
-            "CryptoType":1,
-        },
-        "DataB64": ""
-    }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let commonHeaders = {
-        "x-jws-signature": "",
-        "content-digest": "belt-hash256=:"+ hmac +":"
-    }
+    if(enabledHeaders.includes("NoSignature")){
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
+        }
+    } else {
+        let cryptoHashBody
+        cryptoHashBody = {
+            "Auth":{
+                "CryptoType":1,
+            },
+            "DataB64": ""
+        }
+        await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
+        let hmac = await scCryptoHash(config,cryptoHashBody)
+        hmac = hmac.ResultB64
+        await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
+        commonHeaders = {
+            "x-jws-signature": "",
+            "content-digest": "belt-hash256=:"+ hmac +":"
+        }
+    }    
     let requestContentType = enabledHeaders.includes("application/json")? "application/json;charset=utf-8": "application/xml;charset=utf-8"
     if (enabledHeaders.includes("x-fapi-interaction-id")){
         commonHeaders["x-fapi-interaction-id"] = uuid.v4()
@@ -501,10 +544,12 @@ async function makeDELETErequest(config,projectName,projectUrl,requestBody,enabl
         commonHeaders['authorization'] = "Bearer " + config["access_token"]
     }
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
-    let signature = await si.generateSignature(config,"DELETE",projectUrl,commonHeaders,projectName,requestBodyName,additionalInfo)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    commonHeaders['x-jws-signature'] = signature
-    console.log(JSON.stringify(signature))
+    if (!enabledHeaders.includes("NoSignature")){
+        let signature = await si.generateSignature(config,"DELETE",projectUrl,commonHeaders,projectName,requestBodyName,additionalInfo)
+        await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
+        commonHeaders['x-jws-signature'] = signature
+        console.log(JSON.stringify(signature))
+    }
     await appendToDefinedFile("logs.txt","headersList",JSON.stringify(commonHeaders))
     console.log(JSON.stringify(commonHeaders))
     console.log(config.url_swagger + "oapi-channel/open-banking/v1.0" + requestBody)
@@ -539,25 +584,35 @@ async function makePUTrequest(config,projectName,projectUrl,requestBody,enabledH
     setRequestBody(projectName,requestBodyName,sortObjectAlphabetically(requestBody))
     requestBody = getRequestBody(projectName, requestBodyName)
     await appendToDefinedFile("logs.txt","formatted requestBody",JSON.stringify(requestBody))
-    let cryptoHashBody
-    if(requestBody){
-        cryptoHashBody = {
-            "Auth":{
-                "CryptoType":1,
-            },
-            "DataB64": convertToBase64(JSON.stringify(requestBody))
+    let commonHeaders = {}
+    if(enabledHeaders.includes("NoSignature")){
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
         }
     }
-    await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
-    let hmac = await scCryptoHash(config,cryptoHashBody)
-    hmac = hmac.ResultB64
-    await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
-    let commonHeaders = {
-        "content-type": "application/xml;charset=utf-8",
-        "accept": "application/xml;charset=utf-8",
-        "x-jws-signature": "",
-        "content-digest": "belt-hash256=:"+ hmac +":"
+    else {
+        let cryptoHashBody
+        if(requestBody){
+            cryptoHashBody = {
+                "Auth":{
+                    "CryptoType":1,
+                },
+                "DataB64": convertToBase64(JSON.stringify(requestBody))
+            }
+        }
+        await appendToDefinedFile("logs.txt","cryptoHashBody",JSON.stringify(cryptoHashBody))
+        let hmac = await scCryptoHash(config,cryptoHashBody)
+        hmac = hmac.ResultB64
+        await appendToDefinedFile("logs.txt","content-digest",hmac.toString())
+        commonHeaders = {
+            "content-type": "application/xml;charset=utf-8",
+            "accept": "application/xml;charset=utf-8",
+            "x-jws-signature": "",
+            "content-digest": "belt-hash256=:"+ hmac +":"
+        }
     }
+
     if (enabledHeaders.includes("x-fapi-interaction-id")){
         commonHeaders["x-fapi-interaction-id"] = uuid.v4()
     }
@@ -580,10 +635,12 @@ async function makePUTrequest(config,projectName,projectUrl,requestBody,enabledH
         commonHeaders["authorization"] = "Bearer " + config["access_token"]
     }
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
-    let signature = await si.generateSignature(config,"PUT",projectUrl,commonHeaders,projectName,requestBodyName)
-    await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-    commonHeaders['x-jws-signature'] = signature
-    console.log(JSON.stringify(signature))
+    if(!enabledHeaders.includes("NoSignature")){
+        let signature = await si.generateSignature(config,"PUT",projectUrl,commonHeaders,projectName,requestBodyName)
+        await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
+        commonHeaders['x-jws-signature'] = signature
+        console.log(JSON.stringify(signature))
+    }
     await appendToDefinedFile("logs.txt","headersList",JSON.stringify(commonHeaders))
     console.log(JSON.stringify(commonHeaders))
     const response = await fetch(config.url_swagger + "oapi-channel/open-banking/v1.0" + projectUrl, {
@@ -758,6 +815,7 @@ async function createImitationInsert(config,requestBodyWithExternalRepresentatio
   await createMACkey(config).then((data)=>{config.MAC_KEY = data.ResultB64})
 
   console.log("generated MAC_KEY" + config.MAC_KEY)
+  console.log("extendedbodyhash\n" + extendedBodyHash)
   let data = {
       "Auth": {
         "CryptoType": 3,
@@ -1204,6 +1262,140 @@ async function putConsentSpecialPartExternalRepresentation(config,body,enabledHe
     return putConsentSpecialPartExternalRepresentationResponse
 }
 
+async function putAccountConsentsSpecialPartExternalRepresentation(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let putAccountConsentsSpecialPartExternalRepresentationResponse = await makePUTrequest(config, "pispAuth","/accountConsents/createSpecialPartExternalRepresentation",body,enabledHeaders)
+    console.log(JSON.stringify(putAccountConsentsSpecialPartExternalRepresentationResponse))
+    await appendToDefinedFile("logs.txt","putAccountConsentsSpecialPartExternalRepresentationResponse",JSON.stringify(putAccountConsentsSpecialPartExternalRepresentationResponse))
+    return putAccountConsentsSpecialPartExternalRepresentationResponse
+}
+
+async function putAccountConsentsExternalRepresentation(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let putAccountConsentsExternalRepresentationResponse = await makePUTrequest(config, "pispAuth","/accountConsents/createExternalRepresentation",body,enabledHeaders)
+    console.log(JSON.stringify(putAccountConsentsExternalRepresentationResponse))
+    await appendToDefinedFile("logs.txt","putAccountConsentsExternalRepresentationResponse",JSON.stringify(putAccountConsentsExternalRepresentationResponse))
+    return putAccountConsentsExternalRepresentationResponse
+}
+
+async function postPaymentIntent(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    enabledHeaders.push("NoSignature")
+    console.log(enabledHeaders)
+    let postPaymentIntentResponse = await makePOSTrequest(config, "pispAuth","/paymentIntents",body,enabledHeaders)
+    console.log(JSON.stringify(postPaymentIntentResponse))
+    await appendToDefinedFile("logs.txt","postPaymentIntent_response",JSON.stringify(postPaymentIntentResponse))
+    return postPaymentIntentResponse
+}
+
+async function putPaymentIntent(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    enabledHeaders.push("NoSignature")
+    console.log(enabledHeaders)
+    let putPaymentIntentResponse = await makePUTrequest(config, "pispAuth","/paymentIntents",body,enabledHeaders)
+    console.log(JSON.stringify(putPaymentIntentResponse))
+    await appendToDefinedFile("logs.txt","putPaymentIntent_response",JSON.stringify(putPaymentIntentResponse))
+    return putPaymentIntentResponse
+}
+
+async function postAccountIntent(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let postAccountIntentResponse = await makePOSTrequest(config, "pispAuth","/accountIntents",body,enabledHeaders)
+    console.log(JSON.stringify(postAccountIntentResponse))
+    await appendToDefinedFile("logs.txt","postAccountIntent_response",JSON.stringify(postAccountIntentResponse))
+    return postAccountIntentResponse
+}
+
+async function putAccountIntent(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let putAccountIntentResponse = await makePUTrequest(config, "pispAuth","/accountIntents",body,enabledHeaders)
+    console.log(JSON.stringify(putAccountIntentResponse))
+    await appendToDefinedFile("logs.txt","putAccountIntent_response",JSON.stringify(putAccountIntentResponse))
+    return putAccountIntentResponse
+}
+
+async function postAccountConsents(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let postAccountConsentsResponse = await makePOSTrequest(config, "pispAuth","/accountConsents",body,enabledHeaders)
+    console.log(JSON.stringify(postAccountConsentsResponse))
+    await appendToDefinedFile("logs.txt","postAccountConsents_response",JSON.stringify(postAccountConsentsResponse))
+    return postAccountConsentsResponse
+}
+
+async function patchAccountConsents(config,body,enabledHeaders){
+    console.log(config)
+    console.log(body)
+    console.log(enabledHeaders)
+    let patchAccountConsentsResponse = await makePATCHrequest(config, "pispAuth","/accountConsents",body,enabledHeaders)
+    console.log(JSON.stringify(patchAccountConsentsResponse))
+    await appendToDefinedFile("logs.txt","patchAccountConsents_response",JSON.stringify(patchAccountConsentsResponse))
+    return patchAccountConsentsResponse
+}
+
+async function postStatements(config, body, enabledHeaders) {
+    debugger;
+    console.log(config);
+    console.log(body);
+    console.log(enabledHeaders);
+    
+    // Parse the body to separate URL and payload
+    let lines = body.split('\n');
+    let url = lines[0].trim();
+    let payloadStr = lines.slice(1).join('\n').trim();
+    
+    // Parse the payload JSON
+    let payload;
+    try {
+        payload = JSON.parse(payloadStr);
+    } catch (e) {
+        console.error('Invalid JSON payload:', payloadStr);
+        throw new Error('Invalid JSON payload');
+    }
+    
+    let response = await makePOSTrequest(config, "pispAuth", url, payload, enabledHeaders);
+    console.log(JSON.stringify(response));
+    await appendToDefinedFile("logs.txt", "postStatements_response", JSON.stringify(response));
+    return response;
+}
+
+async function postTransactions(config, body, enabledHeaders) {
+    debugger;
+    console.log(config);
+    console.log(body);
+    console.log(enabledHeaders);
+    
+    // Parse the body to separate URL and payload
+    let lines = body.split('\n');
+    let url = lines[0].trim();
+    let payloadStr = lines.slice(1).join('\n').trim();
+    
+    // Parse the payload JSON
+    let payload;
+    try {
+        payload = JSON.parse(payloadStr);
+    } catch (e) {
+        console.error('Invalid JSON payload:', payloadStr);
+        throw new Error('Invalid JSON payload');
+    }
+    
+    let response = await makePOSTrequest(config, "pispAuth", url, payload, enabledHeaders);
+    console.log(JSON.stringify(response));
+    await appendToDefinedFile("logs.txt", "postTransactions_response", JSON.stringify(response));
+    return response;
+}
+
 async function prepareExternalRepresentationBody(body,type){
     let returnBody = body
     if(type == "domestic"){
@@ -1258,15 +1450,23 @@ async function prepareExternalRepresentationBody(body,type){
     return returnBody
 }
 
+async function prepareExternalRepresentationBodyAccounts(body,type){
+    let returnBody = body
+    let sortedAccList = sortObjectAlphabetically(returnBody)
+    returnBody = sortedAccList
+    return returnBody
+}
+
 async function prepareExternalRepresentationSpecialPartBody(config,requestBodyWithExternalRepresentation){
+    requestBodyWithExternalRepresentation = sortObjectAlphabetically(requestBodyWithExternalRepresentation)
     debugger;
     let imitIns = await createImitationInsert(config,requestBodyWithExternalRepresentation)
+    console.log("ImitIns\n" + imitIns) 
     let specPartObject = await createSpecialPartObject(config,imitIns.ResultB64,requestBodyWithExternalRepresentation)
     return specPartObject
 }
 
 async function preparePaymentsBody(type, reqConsent, resConsent){
-    debugger;
     let returnBody = {"data":{"initiation":{}}}
     let unixDate = dateModule.unixDate
     
@@ -1338,8 +1538,27 @@ async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extRepr
     return authorisationBody
 }
 
+async function prepareAccountsAuthorisationBody(preparedAccList,extRepr,specPart,extReprSpecPart,type){
+    console.log("extRepr_fromprep\n"+JSON.stringify(extRepr))
+    console.log("specPart_fromprep\n"+JSON.stringify(specPart))
+    console.log("extReprSpecPart\n"+JSON.stringify(extReprSpecPart))
+    console.log("preparedAccList\n" + JSON.stringify(preparedAccList))
+    let authorisationBody = preparedAccList
+    console.log("authorisationBody\n"+JSON.stringify(authorisationBody))
+    authorisationBody.data.externalRepresentation = extRepr.data.externalRepresentation
+    console.log("authorisationBodyWithExtRepr\n"+JSON.stringify(authorisationBody))
+    authorisationBody.specialPart = specPart.specialPart
+    console.log("authorisationBodyWithSpecPart\n"+JSON.stringify(authorisationBody))
+    authorisationBody.specialPart.externalRepresentationSpecialPart = extReprSpecPart.data.externalRepresentationSpecialPart
+    console.log("authorisationBodyWithSpecPartExtRepr\n"+JSON.stringify(authorisationBody))
+    
+    authorisationBody = sortObjectAlphabetically(authorisationBody)
+    return authorisationBody
+}
+
 module.exports = {defaultConfig,
     createTokenQPISP,createTokenTPE,createTokenPISP,createDboClientToken,
+    postPaymentIntent,putPaymentIntent,
     abstractGETrequest, abstractDELETErequest,
     postDomesticConsent,patchDomesticConsent,postDomesticPayment,putDomesticConsentExternalRepresentation,
     postDomesticTaxConsent,patchDomesticTaxConsent,postDomesticTaxPayment,putDomesticTaxConsentExternalRepresentation,
@@ -1348,6 +1567,9 @@ module.exports = {defaultConfig,
     postRequirementConsent,patchRequirementConsent,postRequirementPayment,putRequirementConsentExternalRepresentation,
     postTaxRequirementConsent,patchTaxRequirementConsent,postTaxRequirementPayment,putTaxRequirementConsentExternalRepresentation,
     postVRPConsent,patchVRPConsent,postVRPPayment,putVRPConsentExternalRepresentation,
+    postAccountIntent,putAccountIntent,prepareExternalRepresentationBodyAccounts,
+    postAccountConsents, patchAccountConsents,prepareAccountsAuthorisationBody,
+    postStatements, postTransactions,
     makePOSTrequest,
-    prepareExternalRepresentationBody,prepareExternalRepresentationSpecialPartBody,putConsentSpecialPartExternalRepresentation,prepareAuthorisationBody,preparePaymentsBody,
+prepareExternalRepresentationBody,prepareExternalRepresentationSpecialPartBody,putConsentSpecialPartExternalRepresentation,putAccountConsentsSpecialPartExternalRepresentation,putAccountConsentsExternalRepresentation,prepareAuthorisationBody,preparePaymentsBody,
     getRequestBody,scCryptoHash,generateHeader,scCryptoSign,createImitationInsert,createSpecialPartObject,createExternalRepresentationSpecialPart,renameKeyInObject,createExternalRepresentation,generateRandomHex,getAccListPaymentsKEYCLOAKcheck,getAccListPaymentsKEYCLOAK}

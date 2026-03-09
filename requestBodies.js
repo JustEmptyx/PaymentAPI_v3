@@ -574,7 +574,8 @@ const REQUESTS = {
 
 function requestBody(project, method) {
     const projectData = REQUESTS[project];
-    if (projectData) {return projectData[method] || null;
+    if (projectData) {
+        return projectData[method] || null;
     }
     return null;
 }
