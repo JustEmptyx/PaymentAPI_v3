@@ -75,6 +75,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const groupTitles = {
                 'tokens': 'Токены',
                 'common': 'Общие функции',
+                'intents': 'Intents',
+                'consents': 'Consents',
+                'payments': 'Payments',
+                'accounts': 'Accounts',
+                // Sub-group titles
+                'paymentIntents': 'Payment Intents',
+                'accountIntents': 'Account Intents',
+                'accounts': 'Accounts',
+                'balances': 'Balances',
+                'statements': 'Statements',
+                'transactions': 'Transactions',
                 'domestic': 'Domestic',
                 'domesticTax': 'Domestic Tax',
                 'listAccounts': 'List Accounts',
@@ -84,46 +95,103 @@ document.addEventListener('DOMContentLoaded', function() {
                 'VRP': 'VRP'
             };
             
-            const groupOrder = ['tokens', 'common', 'domestic', 'domesticTax', 'listAccounts', 'listPassports', 'requirement', 'taxRequirement', 'VRP'];
+            const groupOrder = ['tokens', 'common', 'intents', 'consents', 'payments', 'accounts'];
 
             groupOrder.forEach(groupName => {
-                if (data.groups[groupName] && data.groups[groupName].length > 0) {
-                    
+                const groupData = data.groups[groupName];
+                if (!groupData) return;
+                
+                // Check if group is nested (object) or flat array
+                if (Array.isArray(groupData)) {
+                    // Flat array format (old style)
+                    if (groupData.length > 0) {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.className = 'function-group';
+
+                        const groupHeader = document.createElement('div');
+                        groupHeader.className = 'function-group-header';
+                        groupHeader.textContent = groupTitles[groupName] || groupName;
+
+                        groupHeader.addEventListener('click', function() {
+                            groupDiv.classList.toggle('active');
+                        });
+
+                        const groupList = document.createElement('ul');
+                        groupList.className = 'function-group-list';
+
+                        groupData.forEach(func => {
+                            const li = document.createElement('li');
+                            li.textContent = func.name;
+                            li.addEventListener('click', (e) => {
+                                e.stopPropagation(); 
+                                selectFunction(func.name);
+                            });
+                            groupList.appendChild(li);
+                        });
+
+                        groupDiv.appendChild(groupHeader);
+                        groupDiv.appendChild(groupList);
+                        functionList.appendChild(groupDiv);
+
+                        if (groupName === 'tokens') {
+                            groupDiv.classList.add('active');
+                        }
+                    }
+                } else {
+                    // Nested object format (new style with sub-groups)
                     const groupDiv = document.createElement('div');
                     groupDiv.className = 'function-group';
 
-                    
                     const groupHeader = document.createElement('div');
                     groupHeader.className = 'function-group-header';
                     groupHeader.textContent = groupTitles[groupName] || groupName;
 
-                    
                     groupHeader.addEventListener('click', function() {
                         groupDiv.classList.toggle('active');
                     });
 
-                    
-                    const groupList = document.createElement('ul');
-                    groupList.className = 'function-group-list';
+                    const groupContent = document.createElement('div');
+                    groupContent.className = 'function-group-content';
 
-                    
-                    data.groups[groupName].forEach(func => {
-                        const li = document.createElement('li');
-                        li.textContent = func.name;
-                        li.addEventListener('click', (e) => {
-                            e.stopPropagation(); 
-                            selectFunction(func.name);
+                    // Iterate over sub-groups
+                    for (const [subGroupName, subGroupFunctions] of Object.entries(groupData)) {
+                        if (!subGroupFunctions || subGroupFunctions.length === 0) continue;
+
+                        const subGroupDiv = document.createElement('div');
+                        subGroupDiv.className = 'function-sub-group';
+
+                        const subGroupHeader = document.createElement('div');
+                        subGroupHeader.className = 'function-sub-group-header';
+                        subGroupHeader.textContent = groupTitles[subGroupName] || subGroupName;
+
+                        subGroupHeader.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            subGroupDiv.classList.toggle('active');
                         });
-                        groupList.appendChild(li);
-                    });
 
-                    
+                        const subGroupList = document.createElement('ul');
+                        subGroupList.className = 'function-sub-group-list';
+
+                        subGroupFunctions.forEach(func => {
+                            const li = document.createElement('li');
+                            li.textContent = func.name;
+                            li.addEventListener('click', (e) => {
+                                e.stopPropagation(); 
+                                selectFunction(func.name);
+                            });
+                            subGroupList.appendChild(li);
+                        });
+
+                        subGroupDiv.appendChild(subGroupHeader);
+                        subGroupDiv.appendChild(subGroupList);
+                        groupContent.appendChild(subGroupDiv);
+                    }
+
                     groupDiv.appendChild(groupHeader);
-                    groupDiv.appendChild(groupList);
+                    groupDiv.appendChild(groupContent);
                     functionList.appendChild(groupDiv);
 
-                    
-                    if (groupName === 'tokens') {
+                    if (groupName === 'intents') {
                         groupDiv.classList.add('active');
                     }
                 }
@@ -681,6 +749,17 @@ document.addEventListener('DOMContentLoaded', function() {
         resultItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    // Store current sequence state
+    let currentSequenceState = {
+        paymentType: null,
+        steps: [],
+        requestBody: '',
+        enabledHeaders: [],
+        apiKey: '',
+        pauseAtStep: 0,
+        accountsData: null
+    };
+
     // Execute sequence
     async function executeSequence() {
         const paymentType = getSelectedPaymentType();
@@ -691,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Validation
         if (!paymentType) {
-            alert('Please select a payment type');
+            alert('Please select a consent type');
             return;
         }
 
@@ -699,6 +778,17 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Please select at least one step');
             return;
         }
+
+        // Store current sequence state
+        currentSequenceState = {
+            paymentType,
+            steps,
+            requestBody,
+            enabledHeaders,
+            apiKey,
+            pauseAtStep: 0,
+            accountsData: null
+        };
 
         // Clear previous results
         const resultsContainer = document.getElementById('sequence-results');
@@ -727,11 +817,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const result = await response.json();
 
-            if (result.success && result.data && Array.isArray(result.data)) {
-                // Display each result
-                result.data.forEach(item => {
-                    addSequenceResult(item.name, item.success, item.data, item.error, item.headers, item.statusCode);
-                });
+            if (result.success) {
+                // Check if sequence is paused (waiting for account selection)
+                if (result.paused) {
+                    currentSequenceState.pauseAtStep = result.pauseAtStep;
+                    currentSequenceState.accountsData = result.accountsData;
+                    
+                    // Display results up to pause point
+                    if (result.data && Array.isArray(result.data)) {
+                        for (const item of result.data) {
+                            addSequenceResult(item.name, item.success, item.data, item.error, item.headers, item.statusCode);
+                        }
+                    }
+                    
+                    // Show account selection modal
+                    if (paymentType === 'account' && result.accountsData) {
+                        hideLoader();
+                        const selectedAccounts = await showAccountSelectionModal(result.accountsData);
+                        if (selectedAccounts) {
+                            await continueSequenceWithAccounts(selectedAccounts);
+                        }
+                    }
+                } else {
+                    // Normal execution - display all results
+                    if (result.data && Array.isArray(result.data)) {
+                        for (const item of result.data) {
+                            addSequenceResult(item.name, item.success, item.data, item.error, item.headers, item.statusCode);
+                        }
+                    }
+                }
             } else {
                 addSequenceResult('Error', false, null, result.error || 'Unknown error occurred', null, null);
             }
@@ -741,6 +855,199 @@ document.addEventListener('DOMContentLoaded', function() {
         } finally {
             hideLoader();
         }
+    }
+
+    // Continue sequence after account selection
+    async function continueSequenceWithAccounts(selectedAccounts) {
+        if (!selectedAccounts || selectedAccounts.length === 0) {
+            return;
+        }
+
+        // Show loader
+        showLoader();
+
+        try {
+            // Send selected accounts to server to update stored data
+            // Server will use session from cookie automatically
+            const confirmResponse = await fetch('/api/sequence/accounts/confirm', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    selectedAccounts: selectedAccounts.map(acc => acc.accountDetails.identification)
+                }),
+                credentials: 'include'
+            });
+
+            const confirmResult = await confirmResponse.json();
+
+            if (!confirmResult.success) {
+                addSequenceResult('Account Confirmation', false, null, confirmResult.error || 'Failed to confirm accounts', null, null);
+                hideLoader();
+                return;
+            }
+
+            // Add result with selected accounts
+            addSequenceResult('Selected Accounts', true, { 
+                selectedAccounts: selectedAccounts.map(acc => ({
+                    identification: acc.accountDetails?.identification,
+                    currency: acc.currency,
+                    status: acc.status
+                }))
+            }, null, null, null);
+
+            // Continue sequence from paused step
+            const response = await fetch('/api/executeSequence', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    paymentType: currentSequenceState.paymentType,
+                    steps: currentSequenceState.steps,
+                    requestBody: currentSequenceState.requestBody,
+                    enabledHeaders: currentSequenceState.enabledHeaders,
+                    apiKey: currentSequenceState.apiKey,
+                    continueFromStep: currentSequenceState.pauseAtStep,
+                    selectedAccounts: selectedAccounts.map(acc => acc.accountDetails.identification)
+                }),
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data && Array.isArray(result.data)) {
+                // Server now returns only NEW results (after continuation)
+                // Just add them all to the UI
+                for (const item of result.data) {
+                    addSequenceResult(item.name, item.success, item.data, item.error, item.headers, item.statusCode);
+                }
+            } else {
+                addSequenceResult('Error', false, null, result.error || 'Unknown error occurred', null, null);
+            }
+        } catch (error) {
+            console.error('Error continuing sequence:', error);
+            addSequenceResult('Error', false, null, error.message, null, null);
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // Get session ID from cookie
+    function getSessionId() {
+        const name = 'custom_sid' + '=';
+        const decodedCookie = decodeURIComponent(document.cookie);
+        const ca = decodedCookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) === 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return '';
+    }
+
+    // Show account selection modal
+    async function showAccountSelectionModal(data) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('account-selection-modal');
+            const accountList = document.getElementById('account-list');
+            const errorDiv = document.getElementById('account-error');
+            const confirmBtn = document.getElementById('confirm-accounts-btn');
+            
+            // Parse accounts from data
+            let accounts = [];
+            try {
+                const responseData = data.data || data;
+                if (responseData && responseData.account && Array.isArray(responseData.account)) {
+                    accounts = responseData.account;
+                }
+            } catch (e) {
+                console.error('Error parsing accounts:', e);
+            }
+            
+            if (accounts.length === 0) {
+                addSequenceResult('Account Selection', false, null, 'No accounts found in response', null, null);
+                resolve(null);
+                return;
+            }
+            
+            // Build account list HTML
+            accountList.innerHTML = accounts.map((account, index) => {
+                const accountDescription = account.accountDescription || 'Unknown';
+                const identification = account.accountDetails?.identification || 'N/A';
+                const currency = account.currency || 'N/A';
+                const status = account.status || 'unknown';
+                const statusClass = status.toLowerCase() === 'enabled' ? 'enabled' : 'disabled';
+                
+                return `
+                    <div class="account-item" data-index="${index}">
+                        <input type="checkbox" id="account-${index}" value="${index}">
+                        <div class="account-details">
+                            <div class="account-name">${escapeHtml(accountDescription)}</div>
+                            <div class="account-info">
+                                ${escapeHtml(identification)}
+                                <span class="account-currency">${escapeHtml(currency)}</span>
+                                <span class="account-status ${statusClass}">${escapeHtml(status)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add click handlers to account items
+            document.querySelectorAll('.account-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                    }
+                });
+            });
+            
+            // Hide error message
+            errorDiv.style.display = 'none';
+            
+            // Show modal
+            modal.style.display = 'flex';
+            
+            // Handle confirm button click (use onclick to overwrite any previous handlers)
+            confirmBtn.onclick = () => {
+                const selectedAccounts = [];
+                document.querySelectorAll("#account-list input[type='checkbox']:checked").forEach(checkbox => {
+                    const index = parseInt(checkbox.value);
+                    selectedAccounts.push(accounts[index]);
+                });
+                
+                if (selectedAccounts.length === 0) {
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                // Hide modal
+                modal.style.display = 'none';
+                
+                resolve(selectedAccounts);
+            };
+            
+            // Make closeAccountModal function globally available
+            window.closeAccountModal = function() {
+                modal.style.display = 'none';
+                resolve(null);
+            };
+        });
+    }
+
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return text;
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     

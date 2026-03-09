@@ -159,9 +159,9 @@
                 <div class="sequence-container">
                     <h2>Sequence Execution</h2>
                     
-                    <!-- Payment Type Selection -->
+                    <!-- Consent Type Selection -->
                     <div class="sequence-section">
-                        <h3>Payment Type</h3>
+                        <h3>Consent Type</h3>
                         <div class="radio-group" id="payment-type-group">
                             <label class="radio-container">
                                 <input type="radio" name="paymentType" value="domestic">
@@ -197,6 +197,11 @@
                                 <input type="radio" name="paymentType" value="VRP">
                                 <span class="radio-mark"></span>
                                 VRP
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="paymentType" value="account">
+                                <span class="radio-mark"></span>
+                                account
                             </label>
                         </div>
                     </div>
@@ -314,13 +319,15 @@
 
                     <!-- Results Container -->
                     <div class="sequence-section results-section">
-                        <h3>Results</h3>
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                            <h3 style="margin: 0;">Results</h3>
+                            <div id="sequence-loading" class="sequence-loading" style="display: none; align-items: center; gap: 8px;">
+                                <img src="images/loading.gif" alt="Loading..." class="loading-gif" style="width: 20px; height: 20px;">
+                                <span style="font-size: 14px; font-weight: bold; color: #ff9800;">Executing sequence...</span>
+                            </div>
+                        </div>
                         <div id="sequence-results" class="sequence-results">
                             <div class="no-results">No results yet. Execute a sequence to see results here.</div>
-                        </div>
-                        <div id="sequence-loading" class="sequence-loading" style="display: none;">
-                            <img src="images/loading.gif" alt="Loading..." class="loading-gif">
-                            <span>Executing sequence...</span>
                         </div>
                     </div>
                 </div>
@@ -488,6 +495,24 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Selection Modal -->
+    <div id="account-selection-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Accounts</h3>
+                <span class="modal-close" onclick="closeAccountModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Please select at least one account:</p>
+                <div id="account-list" class="account-list"></div>
+                <div id="account-error" class="error-message" style="display: none;">Please select at least 1 account</div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-accounts-btn" class="btn primary">Confirm</button>
             </div>
         </div>
     </div>

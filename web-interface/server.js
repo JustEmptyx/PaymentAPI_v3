@@ -39,111 +39,183 @@ const functionGroups = {
         "GET TPEtoken",
         "GET OBtoken"
     ],
-    "common": [
-        "GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}",
-        'PUT /paymentConsents/createSpecialPartExternalRepresentation',
-        "GET /paymentConsents",
-        "GET /paymentConsents/PSUorPAU/{userId}",
-        "GET /payments",
-    ],
-    "domestic": [
-        "POST /paymentConsents/domestic",
-        "PUT /paymentConsents/createExternalRepresentation",
-        "PATCH /paymentConsents/domestic",
-        "GET /paymentConsents/domestic/{domesticConsentId}",
-        "DELETE /paymentConsents/domestic/{domesticConsentId}",
-        "GET /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}",
-        "DELETE /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}",
-        "POST /payments/domestic",
-        "GET /payments/domestic/{domesticId}",
-        "DELETE /payments/domestic/{domesticId}",
-        "GET /payments/domestic/{domesticId}/PSUorPAU/{userId}",
-        "DELETE /payments/domestic/{domesticId}/PSUorPAU/{userId}",
-    ],
-    "domesticTax": [
-        "POST /paymentConsents/domesticTax",
-        "PUT /paymentConsents/domesticTax/createExternalRepresentation",
-        "PATCH /paymentConsents/domesticTax",
-        "GET /paymentConsents/domesticTax/{domesticTaxConsentId}",
-        "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}",
-        "GET /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
-        "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
-        "POST /payments/domesticTax",
-        "GET /payments/domesticTax/{domesticTaxId}",
-        "DELETE /payments/domesticTax/{domesticTaxId}",
-        "GET /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}",
-        "DELETE /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}",
-    ],
-    "listAccounts": [
-        "POST /paymentConsents/listAccounts",
-        "PUT /paymentConsents/listAccounts/createExternalRepresentation",
-        "PATCH /paymentConsents/listAccounts",
-        "GET /paymentConsents/listAccounts/{listAccountsConsentId}",
-        "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}",
-        "GET /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
-        "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
-        "POST /payments/listAccounts",
-        "GET /payments/listAccounts/{listAccountsId}",
-        "DELETE /payments/listAccounts/{listAccountsId}",
-        "GET /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}",
-        "DELETE /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}",
-    ],
-    "listPassports": [
-        "POST /paymentConsents/listPassports",
-        "PUT /paymentConsents/listPassports/createExternalRepresentation",
-        "PATCH /paymentConsents/listPassports",
-        "GET /paymentConsents/listPassports/{listPassportsConsentId}",
-        "DELETE /paymentConsents/listPassports/{listPassportsConsentId}",
-        "GET /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
-        "DELETE /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
-        "POST /payments/listPassports",
-        "GET /payments/listPassports/{listPassportsId}",
-        "DELETE /payments/listPassports/{listPassportsId}",
-        "GET /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}",
-        "DELETE /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}",
-    ],
-    "requirement": [
-        "POST /paymentConsents/requirement",
-        "PUT /paymentConsents/requirement/createExternalRepresentation",
-        "PATCH /paymentConsents/requirement",
-        "GET /paymentConsents/requirement/{requirementConsentId}",
-        "DELETE /paymentConsents/requirement/{requirementConsentId}",
-        "GET /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}",
-        "DELETE /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}",
-        "POST /payments/requirement",
-        "GET /payments/requirement/{requirementId}",
-        "DELETE /payments/requirement/{requirementId}",
-        "GET /payments/requirement/{requirementId}/PSUorPAU/{userId}",
-        "DELETE /payments/requirement/{requirementId}/PSUorPAU/{userId}",
-    ],
-    "taxRequirement": [
-        "POST /paymentConsents/taxRequirement",
-        "PUT /paymentConsents/taxRequirement/createExternalRepresentation",
-        "PATCH /paymentConsents/taxRequirement",
-        "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}",
-        "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}",
-        "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
-        "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
-        "POST /payments/taxRequirement",
-        "GET /payments/taxRequirement/{taxRequirementId}",
-        "DELETE /payments/taxRequirement/{taxRequirementId}",
-        "GET /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}",
-        "DELETE /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}",
-    ],
-    "VRP": [
-        "POST /paymentConsents/VRP",
-        "PUT /paymentConsents/VRP/createExternalRepresentation",
-        "PATCH /paymentConsents/VRP",
-        "GET /paymentConsents/VRP/{VRPConsentId}",
-        "DELETE /paymentConsents/VRP/{VRPConsentId}",
-        "GET /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}",
-        "DELETE /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}",
-        "POST /payments/VRP",
-        "GET /payments/VRP/{VRPId}",
-        "DELETE /payments/VRP/{VRPId}",
-        "GET /payments/VRP/{VRPId}/PSUorPAU/{userId}",
-        "DELETE /payments/VRP/{VRPId}/PSUorPAU/{userId}",
-    ],
+    // Общие функции - с подгруппами
+    "common": {
+        "accounts": [
+            "GET /accountsList/login/{login}/accountConsents/{accountConsentId}",
+            "PUT /accountConsents/createExternalRepresentation",
+            "PUT /accountConsents/createSpecialPartExternalRepresentation",
+            "GET /accountConsentsList/PSUorPAU/{userId}",
+        ],
+        "payments": [
+            "GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}",
+            'PUT /paymentConsents/createSpecialPartExternalRepresentation',
+            "GET /paymentConsents",
+            "GET /paymentConsents/PSUorPAU/{userId}",
+            "GET /payments",
+            "GET /payments/PSUorPAU/{userId}",
+        ]
+    },
+    // Accounts - новый раздел
+    "accounts": {
+        "accounts": [
+            "GET /accounts",
+            "GET /accounts/{accountId}"
+        ],
+        "balances": [
+            "GET /balances",
+            "GET /accounts/{accountId}/balances"
+        ],
+        "statements": [
+            "POST /statements/{accountId}",
+            "GET /accounts/{accountId}/statements/{statementId}"
+        ],
+        "transactions": [
+            "POST /accounts/{accountId}/transactions",
+            "GET /accounts/{accountId}/transactions/{transactionListId}"
+        ]
+    },
+    // Intents - новый раздел
+    "intents": {
+        "paymentIntents": [
+            "POST /paymentIntents",
+            "GET /paymentIntents/{personalAccountUser}",
+            "PUT /paymentIntents",
+            "DELETE /paymentIntents/{personalAccountUser}",
+        ],
+        "accountIntents": [
+            "POST /accountIntents",
+            "GET /accountIntents/{personalAccountUser}",
+            "PUT /accountIntents",
+            "DELETE /accountIntents/{personalAccountUser}",
+        ]
+    },
+    // Consents - все paymentConsents
+    "consents": {
+        "accounts": [
+            "POST /accountConsents",
+            "PATCH /accountConsents",
+            "GET /accountConsents/{accountConsentId}",
+            "DELETE /accountConsents/{accountConsentId}",
+            "GET /accountConsents/{accountConsentId}/PSUorPAU/{userId}",
+            "DELETE /accountConsents/{accountConsentId}/PSUorPAU/{userId}",
+        ],
+        "domestic": [
+            "POST /paymentConsents/domestic",
+            "PUT /paymentConsents/createExternalRepresentation",
+            "PATCH /paymentConsents/domestic",
+            "GET /paymentConsents/domestic/{domesticConsentId}",
+            "DELETE /paymentConsents/domestic/{domesticConsentId}",
+            "GET /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}",
+            "DELETE /paymentConsents/domestic/{domesticConsentId}/PSUorPAU/{userId}",
+        ],
+        "domesticTax": [
+            "POST /paymentConsents/domesticTax",
+            "PUT /paymentConsents/domesticTax/createExternalRepresentation",
+            "PATCH /paymentConsents/domesticTax",
+            "GET /paymentConsents/domesticTax/{domesticTaxConsentId}",
+            "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}",
+            "GET /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
+            "DELETE /paymentConsents/domesticTax/{domesticTaxConsentId}/PSUorPAU/{userId}",
+        ],
+        "listAccounts": [
+            "POST /paymentConsents/listAccounts",
+            "PUT /paymentConsents/listAccounts/createExternalRepresentation",
+            "PATCH /paymentConsents/listAccounts",
+            "GET /paymentConsents/listAccounts/{listAccountsConsentId}",
+            "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}",
+            "GET /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
+            "DELETE /paymentConsents/listAccounts/{listAccountsConsentId}/PSUorPAU/{userId}",
+        ],
+        "listPassports": [
+            "POST /paymentConsents/listPassports",
+            "PUT /paymentConsents/listPassports/createExternalRepresentation",
+            "PATCH /paymentConsents/listPassports",
+            "GET /paymentConsents/listPassports/{listPassportsConsentId}",
+            "DELETE /paymentConsents/listPassports/{listPassportsConsentId}",
+            "GET /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
+            "DELETE /paymentConsents/listPassports/{listPassportsConsentId}/PSUorPAU/{userId}",
+        ],
+        "requirement": [
+            "POST /paymentConsents/requirement",
+            "PUT /paymentConsents/requirement/createExternalRepresentation",
+            "PATCH /paymentConsents/requirement",
+            "GET /paymentConsents/requirement/{requirementConsentId}",
+            "DELETE /paymentConsents/requirement/{requirementConsentId}",
+            "GET /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}",
+            "DELETE /paymentConsents/requirement/{requirementConsentId}/PSUorPAU/{userId}",
+        ],
+        "taxRequirement": [
+            "POST /paymentConsents/taxRequirement",
+            "PUT /paymentConsents/taxRequirement/createExternalRepresentation",
+            "PATCH /paymentConsents/taxRequirement",
+            "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}",
+            "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}",
+            "GET /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
+            "DELETE /paymentConsents/taxRequirement/{taxRequirementConsentId}/PSUorPAU/{userId}",
+        ],
+        "VRP": [
+            "POST /paymentConsents/VRP",
+            "PUT /paymentConsents/VRP/createExternalRepresentation",
+            "PATCH /paymentConsents/VRP",
+            "GET /paymentConsents/VRP/{VRPConsentId}",
+            "DELETE /paymentConsents/VRP/{VRPConsentId}",
+            "GET /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}",
+            "DELETE /paymentConsents/VRP/{VRPConsentId}/PSUorPAU/{userId}",
+        ],
+    },
+    // Payments - все payments
+    "payments": {
+        "domestic": [
+            "POST /payments/domestic",
+            "GET /payments/domestic/{domesticId}",
+            "DELETE /payments/domestic/{domesticId}",
+            "GET /payments/domestic/{domesticId}/PSUorPAU/{userId}",
+            "DELETE /payments/domestic/{domesticId}/PSUorPAU/{userId}",
+        ],
+        "domesticTax": [
+            "POST /payments/domesticTax",
+            "GET /payments/domesticTax/{domesticTaxId}",
+            "DELETE /payments/domesticTax/{domesticTaxId}",
+            "GET /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}",
+            "DELETE /payments/domesticTax/{domesticTaxId}/PSUorPAU/{userId}",
+        ],
+        "listAccounts": [
+            "POST /payments/listAccounts",
+            "GET /payments/listAccounts/{listAccountsId}",
+            "DELETE /payments/listAccounts/{listAccountsId}",
+            "GET /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}",
+            "DELETE /payments/listAccounts/{listAccountsId}/PSUorPAU/{userId}",
+        ],
+        "listPassports": [
+            "POST /payments/listPassports",
+            "GET /payments/listPassports/{listPassportsId}",
+            "DELETE /payments/listPassports/{listPassportsId}",
+            "GET /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}",
+            "DELETE /payments/listPassports/{listPassportsId}/PSUorPAU/{userId}",
+        ],
+        "requirement": [
+            "POST /payments/requirement",
+            "GET /payments/requirement/{requirementId}",
+            "DELETE /payments/requirement/{requirementId}",
+            "GET /payments/requirement/{requirementId}/PSUorPAU/{userId}",
+            "DELETE /payments/requirement/{requirementId}/PSUorPAU/{userId}",
+        ],
+        "taxRequirement": [
+            "POST /payments/taxRequirement",
+            "GET /payments/taxRequirement/{taxRequirementId}",
+            "DELETE /payments/taxRequirement/{taxRequirementId}",
+            "GET /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}",
+            "DELETE /payments/taxRequirement/{taxRequirementId}/PSUorPAU/{userId}",
+        ],
+        "VRP": [
+            "POST /payments/VRP",
+            "GET /payments/VRP/{VRPId}",
+            "DELETE /payments/VRP/{VRPId}",
+            "GET /payments/VRP/{VRPId}/PSUorPAU/{userId}",
+            "DELETE /payments/VRP/{VRPId}/PSUorPAU/{userId}",
+        ],
+    },
 };
 
 const functionMappings = {
@@ -152,12 +224,19 @@ const functionMappings = {
     'GET TPEtoken': 'createTokenTPE',
     'GET OBtoken': 'createDboClientToken',
 
+    // common.accounts
+    'GET /accountsList/login/{login}/accountConsents/{accountConsentId}':'abstractGETrequest',
+    'PUT /accountConsents/createExternalRepresentation':'putAccountConsentsExternalRepresentation',
+    'PUT /accountConsents/createSpecialPartExternalRepresentation':'putAccountConsentsSpecialPartExternalRepresentation',
+    
+    // common.payments
     'GET /accountsList/login/{login}/paymentConsents/{paymentConsentId}':'abstractGETrequest',
     'PUT /paymentConsents/createSpecialPartExternalRepresentation':'putConsentSpecialPartExternalRepresentation',
 
     'GET /paymentConsents': 'abstractGETrequest',
     'GET /paymentConsents/PSUorPAU/{userId}': 'abstractGETrequest',
     'GET /payments': 'abstractGETrequest',
+    'GET /payments/PSUorPAU/{userId}': 'abstractGETrequest',
 
     'POST /paymentConsents/domestic': 'postDomesticConsent',
     'PUT /paymentConsents/createExternalRepresentation' : 'putDomesticConsentExternalRepresentation',
@@ -249,15 +328,87 @@ const functionMappings = {
     "DELETE /payments/VRP/{VRPId}": 'abstractDELETErequest',
     "GET /payments/VRP/{VRPId}/PSUorPAU/{userId}": 'abstractGETrequest',
     "DELETE /payments/VRP/{VRPId}/PSUorPAU/{userId}": 'abstractDELETErequest',
+
+    "POST /paymentIntents":'postPaymentIntent',
+    "GET /paymentIntents/{personalAccountUser}":'abstractGETrequest',
+    "PUT /paymentIntents":'putPaymentIntent',
+    "DELETE /paymentIntents/{personalAccountUser}":'abstractDELETErequest',
+
+    // Accounts - with NoSignature header
+    "GET /accounts":'abstractGETrequest',
+    "GET /accounts/{accountId}":'abstractGETrequest',
+    "GET /balances":'abstractGETrequest',
+    "GET /accounts/{accountId}/balances":'abstractGETrequest',
+    "POST /statements/{accountId}":'postStatements',
+    "GET /accounts/{accountId}/statements/{statementId}":'abstractGETrequest',
+    "POST /accounts/{accountId}/transactions":'postTransactions',
+    "GET /accounts/{accountId}/transactions/{transactionListId}":'abstractGETrequest',
+
+    // Account Intents - with NoSignature header
+    "POST /accountIntents":'postAccountIntent',
+    "GET /accountIntents/{personalAccountUser}":'abstractGETrequest',
+    "PUT /accountIntents":'putAccountIntent',
+    "DELETE /accountIntents/{personalAccountUser}":'abstractDELETErequest',
+
+    // Account Consents - with NoSignature header
+    "POST /accountConsents":'postAccountConsents',
+    "PATCH /accountConsents":'patchAccountConsents',
+    "GET /accountConsents/{accountConsentId}":'abstractGETrequest',
+    "DELETE /accountConsents/{accountConsentId}":'abstractDELETErequest',
+    "GET /accountConsents/{accountConsentId}/PSUorPAU/{userId}":'abstractGETrequest',
+    "DELETE /accountConsents/{accountConsentId}/PSUorPAU/{userId}":'abstractDELETErequest',
+    "GET /accountConsentsList/PSUorPAU/{userId}":'abstractGETrequest',
 };
+
+// Functions that require NoSignature header
+const noSignatureFunctions = [
+    // Accounts
+    'GET /accounts',
+    'GET /accounts/{accountId}',
+    'GET /balances',
+    'GET /accounts/{accountId}/balances',
+    'POST /statements/{accountId}',
+    'GET /accounts/{accountId}/statements/{statementId}',
+    'POST /accounts/{accountId}/transactions',
+    'GET /accounts/{accountId}/transactions/{transactionListId}',
+
+    // common.accounts
+    'GET /accountsList/login/{login}/accountConsents/{accountConsentId}',
+    'PUT /accountConsents/createSpecialPartExternalRepresentation',
+    
+    // Account Intents
+    'POST /accountIntents',
+    'GET /accountIntents/{personalAccountUser}',
+    'PUT /accountIntents',
+    'DELETE /accountIntents/{personalAccountUser}',
+    
+    // Account Consents
+    'POST /accountConsents',
+    'PATCH /accountConsents',
+    'GET /accountConsents/{accountConsentId}',
+    'DELETE /accountConsents/{accountConsentId}',
+    'GET /accountConsents/{accountConsentId}/PSUorPAU/{userId}',
+    'DELETE /accountConsents/{accountConsentId}/PSUorPAU/{userId}',
+    'GET /accountConsentsList/PSUorPAU/{userId}',
+    'PUT /accountConsents/createExternalRepresentation',
+    'PUT /accountConsents/createSpecialPartExternalRepresentation'
+];
 
 
 app.get('/api/functions', (req, res) => {
     const response = {};
-    for (const [groupName, functionNames] of Object.entries(functionGroups)) {
-        response[groupName] = functionNames.map(name => ({
-            name: name,
-        }));
+    for (const [groupName, groupValue] of Object.entries(functionGroups)) {
+        // Check if group is nested (object with sub-groups) or flat array
+        if (Array.isArray(groupValue)) {
+            // Flat array - old format
+            response[groupName] = groupValue.map(name => ({ name: name }));
+        } else {
+            // Nested object - new format with sub-groups
+            response[groupName] = {};
+            for (const [subGroupName, subGroupFunctions] of Object.entries(groupValue)) {
+                response[groupName][subGroupName] = subGroupFunctions.map(name => ({ name: name }));
+            }
+        }
     }
     res.json({ groups: response });
 });
@@ -335,7 +486,6 @@ app.post('/api/context/:functionName/result', (req, res) => {
 });
 
 app.get('/api/session', (req, res) => {
-    debugger;
     res.json({
         success: true,
         sessionId: req.sessionID,
@@ -355,7 +505,6 @@ app.get('/api/config/default', (req, res) => {
 });
 
 app.post('/api/config', (req, res) => {
-    debugger;
     try {
         const { config } = req.body;
         console.log('Updating config for session:', req.sessionID);
@@ -376,15 +525,7 @@ app.post('/api/config', (req, res) => {
     }
 });
 
-app.get('/api/functions', (req, res) => {
-    const functions = Object.getOwnPropertyNames(PISPauth)
-        .filter(name => typeof PISPauth[name] === 'function' && name !== 'main1')
-        .sort();
-    res.json({ functions });
-});
-
 app.post('/api/execute/:functionName', async (req, res) => {
-    debugger;
     if (!req.session.config) {
         req.session.config = { ...PISPauth.defaultConfig };
     }
@@ -428,6 +569,13 @@ app.post('/api/execute/:functionName', async (req, res) => {
         
         // Store response headers info
         const responseHeaders = {};
+        
+        // Add NoSignature header for Account Intents functions
+        if (noSignatureFunctions.includes(functionName)) {
+            if (!enabledHeaders.includes('NoSignature')) {
+                enabledHeaders.push('NoSignature');
+            }
+        }
         
         // Wrap the original function to capture headers
         const originalFunction = PISPauth[actualFunctionName];
@@ -488,10 +636,51 @@ app.post('/api/execute/:functionName', async (req, res) => {
 // Sequence execution endpoint
 app.post('/api/executeSequence', async (req, res) => {
     if (!req.session.config) {
-        req.session.config = { ...PISPauth.defaultConfig };
+        req.session.config = { ...PISPauth.defaultConfig};
     }
     
-    const { paymentType, steps, requestBody, enabledHeaders = [], apiKey } = req.body;
+    const { paymentType, steps, requestBody, enabledHeaders = [], apiKey, continueFromStep, selectedAccounts } = req.body;
+    
+    // Check if we're continuing from account selection
+    const sessionId = req.sessionID;
+    const isContinuing = continueFromStep !== undefined;
+    
+    // Clear pending sequence if starting a new one (not continuing)
+    if (!isContinuing && pendingSequences[sessionId]) {
+        delete pendingSequences[sessionId];
+    }
+    
+    // If continuing with selected accounts, use stored sequence data
+    let storedSequenceData = null;
+    if (isContinuing) {
+        if (pendingSequences[sessionId]) {
+            storedSequenceData = pendingSequences[sessionId];
+            
+            // Clear pending sequence immediately to prevent concurrent continuation calls
+            delete pendingSequences[sessionId];
+            
+            // Apply selected accounts filtering if provided
+            if (selectedAccounts && storedSequenceData.accountsData) {
+                const allAccounts = storedSequenceData.accountsData.data.account || [];
+                const filteredAccounts = allAccounts.filter(acc => 
+                    selectedAccounts.includes(acc.accountDetails.identification)
+                );
+                // Create a deep copy and replace accounts
+                storedSequenceData.accountsData = JSON.parse(JSON.stringify(storedSequenceData.accountsData));
+                storedSequenceData.accountsData.data.account = filteredAccounts;
+            }
+            
+            // Restore config from stored data
+            if (storedSequenceData.config) {
+                req.session.config = { ...req.session.config, ...storedSequenceData.config };
+            }
+        } else {
+            return res.json({
+                success: false,
+                error: 'Pending sequence not found or already completed.'
+            });
+        }
+    }
     
     try {
         // Parse request body
@@ -508,29 +697,87 @@ app.post('/api/executeSequence', async (req, res) => {
             parsedBody = {};
         }
         
-        // Set API key in config from request or session
+        // Set API key in config from request or stored data
         if (apiKey) {
             req.session.config.apikey = apiKey;
-        } else if (!req.session.config.apikey) {
-            // Use default or keep existing
+        } else if (storedSequenceData && storedSequenceData.apiKey) {
+            req.session.config.apikey = storedSequenceData.apiKey;
         }
         
         // Build sequence of functions based on paymentType and steps
         const sequence = buildSequence(paymentType, steps);
-        const results = [];
+        
+        // If continuing, use stored results as base
+        let results = [];
+        if (isContinuing && storedSequenceData && storedSequenceData.results) {
+            // Use stored results
+            results = [...storedSequenceData.results];
+        }
+        
+        // Determine where to start in the sequence
+        // When continuing after account selection:
+        // - continueFromStep is the index where we paused (the account selection step)
+        // - We need to continue from the NEXT step after account selection
+        // - The results array already contains results up to and including the pause point
+        // - We update the stored accounts data with filtered accounts from confirmation
+        const startIndex = isContinuing ? (continueFromStep + 1) : 0;
         
         // Execute each function sequentially
-        for (const funcInfo of sequence) {
+        for (let i = startIndex; i < sequence.length; i++) {
+            const funcInfo = sequence[i];
+            
             try {
-                // Check if this is a special function (checkApikey, createDBOtokenClient, abstractGETrequest)
+                // Check if this is a special function
                 if (funcInfo.isSpecial) {
                     const result = await executeSpecialFunction(
                         funcInfo.name,
                         req.session.config,
                         parsedBody,
                         results,
-                        paymentType
+                        paymentType,
+                        storedSequenceData
                     );
+                    
+                    // Check if this step requires account selection
+                    if (result.requiresAccountSelection) {
+                        // Store sequence data for continuation
+                        pendingSequences[sessionId] = {
+                            paymentType,
+                            steps,
+                            requestBody: parsedBody,
+                            enabledHeaders,
+                            apiKey: apiKey || (storedSequenceData ? storedSequenceData.apiKey : null),
+                            sequenceIndex: i,
+                            results: results,
+                            accountsData: result.data,
+                            config: {
+                                apikey: req.session.config.apikey,
+                                access_token: req.session.config.access_token,
+                                url_kc: req.session.config.url_kc,
+                                url_swagger: req.session.config.url_swagger,
+                                breadcrumbId: req.session.config.breadcrumbId
+                            }
+                        };
+                        
+                        results.push({
+                            name: funcInfo.displayName,
+                            success: result.success,
+                            data: result.data,
+                            error: result.error,
+                            headers: result.headers || {},
+                            statusCode: result.statusCode || null,
+                            requiresAccountSelection: true
+                        });
+                        
+                        // Return with pause indicator
+                        return res.json({
+                            success: true,
+                            paused: true,
+                            pauseAtStep: i,
+                            data: results,
+                            accountsData: result.data
+                        });
+                    }
                     
                     results.push({
                         name: funcInfo.displayName,
@@ -547,6 +794,10 @@ app.post('/api/executeSequence', async (req, res) => {
                         let headersToUse = enabledHeaders;
                         if (funcInfo.useApiKeyHeader) {
                             headersToUse = [...enabledHeaders, 'x-api-key'];
+                        }
+                        // Add NoSignature header for account type
+                        if (funcInfo.useNoSignature) {
+                            headersToUse = [...headersToUse, 'NoSignature'];
                         }
                         
                         let bodyToUse = parsedBody;
@@ -601,9 +852,20 @@ app.post('/api/executeSequence', async (req, res) => {
             }
         }
         
+        // Clear pending sequence on completion
+        if (pendingSequences[sessionId]) {
+            delete pendingSequences[sessionId];
+        }
+        
+        // If continuing, return only NEW results (executed after continuation)
+        // storedSequenceData.results contains all results up to the pause
+        const resultsToReturn = isContinuing && storedSequenceData 
+            ? results.slice(storedSequenceData.results.length)
+            : results;
+        
         res.json({
             success: true,
-            data: results
+            data: resultsToReturn
         });
     } catch (error) {
         console.error('Error executing sequence:', error);
@@ -615,7 +877,7 @@ app.post('/api/executeSequence', async (req, res) => {
 });
 
 // Helper function to execute special functions
-async function executeSpecialFunction(funcName, config, requestBody, results, paymentType) {
+async function executeSpecialFunction(funcName, config, requestBody, results, paymentType, storedSequenceData = null) {
     try {
         if (funcName === 'checkApikey') {
             // GET {url_kc}/auth/realms/SCRealm/check?apiKey={config.apikey}
@@ -709,7 +971,7 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             return { success: true, data: userResult, statusCode: null };
         }
         
-        if (funcName.startsWith('put') && funcName.endsWith('ConsentExternalRepresentation')) {
+        if (funcName.toLowerCase().startsWith('put') && funcName.toLowerCase().endsWith('consentexternalrepresentation')) {
             // Get the prepared body from previous step
             const prepResult = results.find(r => r.name === 'prepareExternalRepresentationBody');
             const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
@@ -737,7 +999,6 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             const prepBodyResult = results.find(r => r.name === 'prepareExternalRepresentationBody');
             // Get the result from step 6 (put*ConsentExternalRepresentation)
             const putExtRepResult = results.find(r => r.name.endsWith('ConsentExternalRepresentation') && r.name.startsWith('put'));
-            debugger;
             let baseBody = {};
             if (prepBodyResult && prepBodyResult.data) {
                 baseBody = JSON.parse(JSON.stringify(prepBodyResult.data));
@@ -830,12 +1091,171 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
         
         if (funcName === 'createPayment') {
             // Get the prepared body from preparePaymentsBody
-            debugger;
             const prepResult = results.find(r => r.name === 'preparePaymentsBody');
             const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
             const actualFunctionName = `post${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}Payment`;
             if (PISPauth[actualFunctionName]) {
                 const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'x-api-key', 'x-idempotency-key']);
+                const responseHeaders = {};
+                const statusCode = config.lastStatusCode || null;
+                if (config.breadcrumbId) {
+                    responseHeaders.breadcrumbId = config.breadcrumbId;
+                }
+                return { success: true, data: result, headers: responseHeaders, statusCode };
+            }
+            return { success: false, error: `Function ${actualFunctionName} not found` };
+        }
+        
+        // Handle account type - GET request for accounts
+        if (funcName === 'abstractGETAccountRequest') {
+            // Build the path: /accountsList/login/{login}/accountConsents/{accountConsentId}
+            const checkApikeyResult = results.find(r => r.name === 'checkApikey');
+            const createConsentResult = results.find(r => r.name === 'postAccountConsents');
+            
+            // Get clientName from checkApikey response
+            let login = 'unknown';
+            if (checkApikeyResult && checkApikeyResult.data) {
+                login = checkApikeyResult.data.clientName || checkApikeyResult.data.login || 'unknown';
+            }
+            
+            // Get accountConsentId from createConsent response
+            let consentId = 'unknown';
+            if (createConsentResult && createConsentResult.data) {
+                const consentData = createConsentResult.data.data || createConsentResult.data;
+                consentId = consentData.accountConsentId || consentData.consentId || 'unknown';
+            }
+            
+            const path = `/accountsList/login/${login}/accountConsents/${consentId}`;
+            config.breadcrumbId = null;
+            config.lastStatusCode = null;
+            // Use NoSignature header for account type
+            const result = await PISPauth.abstractGETrequest(config, String(path), ['application/json', 'NoSignature']);
+            
+            const responseHeaders = {};
+            const statusCode = config.lastStatusCode || null;
+            if (config.breadcrumbId) {
+                responseHeaders.breadcrumbId = config.breadcrumbId;
+            }
+            
+            // Return result with flag that account selection is needed
+            return { 
+                success: true, 
+                data: result, 
+                headers: responseHeaders, 
+                statusCode,
+                requiresAccountSelection: true
+            };
+        }
+        
+        // Handle account type - prepare external representation body
+        if (funcName === 'prepareExternalRepresentationBodyAccounts') {
+            // Use filtered accounts data from storedSequenceData if available (after account selection)
+            // Otherwise use original GET accounts result
+            let preparedBody = {};
+            if (storedSequenceData && storedSequenceData.accountsData) {
+                // Use filtered accounts data after selection
+                preparedBody = JSON.parse(JSON.stringify(storedSequenceData.accountsData));
+            } else {
+                // Use original GET accounts result
+                const abstractGetResult = results.find(r => r.name === 'GET accounts');
+                if (abstractGetResult && abstractGetResult.data) {
+                    preparedBody = JSON.parse(JSON.stringify(abstractGetResult.data));
+                }
+            }
+            // Call user-defined function with abstractGetRequest data and paymentType
+            const userResult = await PISPauth.prepareExternalRepresentationBodyAccounts(preparedBody, 'account');
+            return { success: true, data: userResult, statusCode: null };
+        }
+        
+        // Handle account type - PUT /accountConsents/createExternalRepresentation
+        if (funcName === 'PUT /accountConsents/createExternalRepresentation') {
+            const prepResult = results.find(r => r.name === 'prepareExternalRepresentationBodyAccounts');
+            const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
+            const actualFunctionName = 'putAccountConsentsExternalRepresentation';
+            if (PISPauth[actualFunctionName]) {
+                config.breadcrumbId = null;
+                config.lastStatusCode = null;
+                const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'NoSignature']);
+                const responseHeaders = {};
+                const statusCode = config.lastStatusCode || null;
+                if (config.breadcrumbId) {
+                    responseHeaders.breadcrumbId = config.breadcrumbId;
+                }
+                return { success: true, data: result, headers: responseHeaders, statusCode };
+            }
+            return { success: false, error: `Function ${actualFunctionName} not found` };
+        }
+
+        if (funcName === 'prepareExternalRepresentationSpecialPartBodyAccounts') {
+            debugger
+            // Get the result from step 5 (prepareExternalRepresentationBody)
+            const prepBodyResult = results.find(r => r.name === 'prepareExternalRepresentationBodyAccounts');
+            // Get the result from step 6 (put*ConsentExternalRepresentation)
+            const putExtRepResult = results.find(r => r.name === 'putAccountConsentsExternalRepresentation');
+            let baseBody = {};
+            if (prepBodyResult && prepBodyResult.data) {
+                baseBody = JSON.parse(JSON.stringify(prepBodyResult.data));
+            }
+            
+            // Get externalRepresentation from step 6 response
+            if (putExtRepResult && putExtRepResult.data) {
+                const putData = putExtRepResult.data.data || putExtRepResult.data;
+                if (putData && putData.externalRepresentation) {
+                    baseBody.data = baseBody.data || {};
+                    baseBody.data.externalRepresentation = putData.externalRepresentation;
+                }
+            }
+            
+            // Call user-defined function to prepare special part body
+            const userResult = await PISPauth.prepareExternalRepresentationSpecialPartBody(config, baseBody);
+            return { success: true, data: userResult, statusCode: null };
+        }
+
+        // Handle account type - PUT /accountConsents/createSpecialPartExternalRepresentation
+        if (funcName === 'putAccountConsentsSpecialPartExternalRepresentation' || funcName === 'PUT /accountConsents/createSpecialPartExternalRepresentation') {
+            const prepResult = results.find(r => r.name === 'prepareExternalRepresentationSpecialPartBodyAccounts');
+            const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
+            const actualFunctionName = 'putAccountConsentsSpecialPartExternalRepresentation';
+            if (PISPauth[actualFunctionName]) {
+                config.breadcrumbId = null;
+                config.lastStatusCode = null;
+                const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'NoSignature']);
+                const responseHeaders = {};
+                const statusCode = config.lastStatusCode || null;
+                if (config.breadcrumbId) {
+                    responseHeaders.breadcrumbId = config.breadcrumbId;
+                }
+                return { success: true, data: result, headers: responseHeaders, statusCode };
+            }
+            return { success: false, error: `Function ${actualFunctionName} not found` };
+        }
+
+        if (funcName === 'prepareAccountsAuthorisationBody') {
+            // Get results from all previous steps
+            const prepBodyResult = results.find(r => r.name === 'prepareExternalRepresentationBodyAccounts');
+            // const putExtRepResult = results.find(r => r.name.endsWith('ConsentExternalRepresentation') && r.name.startsWith('put'));
+            const putExtRepResult = results.find(r=> r.name === 'putAccountConsentsExternalRepresentation');
+            const prepSpecialPartResult = results.find(r => r.name === 'prepareExternalRepresentationSpecialPartBodyAccounts');
+            const putSpecialPartResult = results.find(r => r.name === 'putAccountConsentsSpecialPartExternalRepresentationAccounts');
+            
+            const body1 = (prepBodyResult && prepBodyResult.data) ? prepBodyResult.data : {};
+            const body2 = (putExtRepResult && putExtRepResult.data) ? putExtRepResult.data : {};
+            const body3 = (prepSpecialPartResult && prepSpecialPartResult.data) ? prepSpecialPartResult.data : {};
+            const body4 = (putSpecialPartResult && putSpecialPartResult.data) ? putSpecialPartResult.data : {};
+            
+            const userResult = await PISPauth.prepareAccountsAuthorisationBody(body1, body2, body3, body4, paymentType);
+            return { success: true, data: userResult, statusCode: null };
+        }
+
+        // Handle account type - PATCH /accountConsents
+        if (funcName === 'patchAccountConsents') {
+            const prepResult = results.find(r => r.name === 'prepareAccountsAuthorisationBody');
+            const bodyToUse = (prepResult && prepResult.data) ? prepResult.data : {};
+            const actualFunctionName = 'patchAccountConsents';
+            if (PISPauth[actualFunctionName]) {
+                config.breadcrumbId = null;
+                config.lastStatusCode = null;
+                const result = await PISPauth[actualFunctionName](config, bodyToUse, ['application/json', 'NoSignature', 'x-idempotency-key']);
                 const responseHeaders = {};
                 const statusCode = config.lastStatusCode || null;
                 if (config.breadcrumbId) {
@@ -855,6 +1275,91 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
 // Helper function to build sequence based on payment type and steps
 function buildSequence(paymentType, steps) {
     const sequence = [];
+    
+    // Handle account type separately
+    if (paymentType === 'account') {
+        // For account type: POST /accountConsents -> checkApikey -> createDBOtokenClient -> GET accounts -> prepareExternalRepresentation -> PUT ExternalRepresentation -> PUT SpecialPart -> PATCH Consent
+        if (steps.includes('createConsent') || steps.includes('authoriseConsent')) {
+            // Step 1: POST /accountConsents (with NoSignature header)
+            sequence.push({
+                name: 'POST /accountConsents',
+                displayName: 'postAccountConsents',
+                useApiKeyHeader: true,
+                useNoSignature: true
+            });
+            
+            // Step 2: checkApikey
+            sequence.push({
+                name: 'checkApikey',
+                displayName: 'checkApikey',
+                isSpecial: true
+            });
+            
+            // Step 3: createDBOtokenClient
+            sequence.push({
+                name: 'createDBOtokenClient',
+                displayName: 'createDBOtokenClient',
+                isSpecial: true
+            });
+            
+            // Step 4: GET accounts with account selection (with NoSignature header)
+            sequence.push({
+                name: 'abstractGETAccountRequest',
+                displayName: 'GET accounts',
+                isSpecial: true,
+                requiresAccountSelection: true,
+                useNoSignature: true
+            });
+            
+            // Step 5: Prepare External Representation Body
+            if (steps.includes('authoriseConsent')) {
+                sequence.push({
+                    name: 'prepareExternalRepresentationBodyAccounts',
+                    displayName: 'prepareExternalRepresentationBodyAccounts',
+                    isSpecial: true
+                });
+                
+                // Step 6: PUT /accountConsents/createExternalRepresentation
+                sequence.push({
+                    name: 'PUT /accountConsents/createExternalRepresentation',
+                    displayName: 'putAccountConsentsExternalRepresentation',
+                    isSpecial: true,
+                    useNoSignature: true
+                });
+                
+                // Step 7: Prepare External Representation Special Part Body
+                sequence.push({
+                    name: 'prepareExternalRepresentationSpecialPartBodyAccounts',
+                    displayName: 'prepareExternalRepresentationSpecialPartBodyAccounts',
+                    isSpecial: true
+                });
+                
+                // Step 8: PUT /accountConsents/createSpecialPartExternalRepresentation
+                sequence.push({
+                    name: 'PUT /accountConsents/createSpecialPartExternalRepresentation',
+                    displayName: 'putAccountConsentsSpecialPartExternalRepresentationAccounts',
+                    isSpecial: true,
+                    useNoSignature: true
+                });
+                
+                // Step 9: Prepare Authorisation Body
+                sequence.push({
+                    name: 'prepareAccountsAuthorisationBody',
+                    displayName: 'prepareAccountsAuthorisationBody',
+                    isSpecial: true
+                });
+                
+                // Step 10: PATCH /accountConsents
+                sequence.push({
+                    name: 'patchAccountConsents',
+                    displayName: 'PATCH /accountConsents',
+                    isSpecial: true,
+                    useNoSignature: true
+                });
+            }
+        }
+        return sequence;
+    }
     
     // Map payment type to function prefixes
     const prefixMap = {
@@ -1064,6 +1569,94 @@ app.post('/api/validate', async (req, res) => {
             message: `Error: ${error.message}`
         });
     }
+});
+
+// Store for pending sequence state
+const pendingSequences = {};
+
+// Endpoint to get accounts for selection
+app.get('/api/sequence/accounts', (req, res) => {
+    const { sessionId } = req.query;
+    if (!sessionId || !pendingSequences[sessionId]) {
+        return res.status(404).json({ 
+            success: false, 
+            error: 'No pending account selection found' 
+        });
+    }
+    
+    const sequenceData = pendingSequences[sessionId];
+    const accountsData = sequenceData.accountsData;
+    
+    if (!accountsData || !accountsData.data || !accountsData.data.account) {
+        return res.status(404).json({ 
+            success: false, 
+            error: 'No accounts found in response' 
+        });
+    }
+    
+    res.json({
+        success: true,
+        accounts: accountsData.data.account
+    });
+});
+
+// Endpoint to confirm account selection
+app.post('/api/sequence/accounts/confirm', (req, res) => {
+    // Use sessionID from the session, not from the request body
+    const sessionId = req.sessionID;
+    const { selectedAccounts } = req.body;
+    
+    if (!sessionId || !pendingSequences[sessionId]) {
+        return res.status(404).json({ 
+            success: false, 
+            error: 'No pending account selection found. Session may have expired.' 
+        });
+    }
+    
+    if (!selectedAccounts || selectedAccounts.length === 0) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Need to select at least 1 account' 
+        });
+    }
+    
+    const sequenceData = pendingSequences[sessionId];
+    const accountsData = sequenceData.accountsData;
+    
+    // Filter accounts to keep only selected ones
+    const allAccounts = accountsData.data.account || [];
+    const filteredAccounts = allAccounts.filter(acc => selectedAccounts.includes(acc.accountDetails.identification));
+    
+    // Update the accounts data with filtered accounts
+    const updatedAccountsData = JSON.parse(JSON.stringify(accountsData));
+    updatedAccountsData.data.account = filteredAccounts;
+    
+    // Store filtered accounts for later use
+    sequenceData.filteredAccounts = filteredAccounts;
+    sequenceData.accountsData = updatedAccountsData;
+    
+    res.json({
+        success: true,
+        message: `Selected ${filteredAccounts.length} account(s)`
+    });
+});
+
+// Endpoint to check if sequence is waiting for account selection
+app.get('/api/sequence/status', (req, res) => {
+    const { sessionId } = req.query;
+    
+    if (!sessionId || !pendingSequences[sessionId]) {
+        return res.json({
+            success: true,
+            waitingForAccountSelection: false
+        });
+    }
+    
+    res.json({
+        success: true,
+        waitingForAccountSelection: true,
+        paymentType: pendingSequences[sessionId].paymentType
+    });
 });
 
 app.get('*', (req, res) => {
