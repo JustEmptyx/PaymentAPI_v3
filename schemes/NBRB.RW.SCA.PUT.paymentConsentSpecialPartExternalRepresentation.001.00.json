@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "specialPart": {
+      "description": "Особенная часть запроса авторизации согласия на инициирование платежа через СДБО Поставщика API с HMAC или ЭЦП без формы внешнего представления.",
+      "$ref": "#/definitions/OBPaymentConsentPUTspecialPartWithoutExternalRepresentation"
+    }
+  },
+  "required": [
+    "specialPart"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "EDSspecialPart": {
+      "description": "Расширяемая особенная часть электронного документа.",
+      "type": "object",
+      "properties": {
+        "signatureNumber": {
+          "description": "Порядковый номер ЭЦП.",
+          "$ref": "#/definitions/Number"
+        },
+        "signature": {
+          "description": "ЭЦП.",
+          "$ref": "#/definitions/Max100KBinary"
+        },
+        "cryptoType": {
+          "description": "Тип криптопровайдера.",
+          "$ref": "#/definitions/Number"
+        },
+        "subjectKeyIdentifier": {
+          "description": "Идентификатор ключа субъекта.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "signatureDateTime": {
+          "description": "Дата и время подписи (по времени сервера).",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "includePreviousSignatures": {
+          "description": "Проверять предыдущие подписи, включая их в Общую часть электронного документа.",
+          "$ref": "#/definitions/YesNoIndicator"
+        },
+        "EDSattributes": {
+          "type": "array",
+          "items": {
+            "description": "Атрибуты ключа, используемые при подписи/проверке подписи.",
+            "$ref": "#/definitions/accountConsentsVCPsignAttrs"
+          }
+        }
+      },
+      "required": [
+        "signatureNumber",
+        "signature",
+        "subjectKeyIdentifier",
+        "signatureDateTime",
+        "includePreviousSignatures"
+      ],
+      "additionalProperties": false
+    },
+    "EDSverifiedSignature2": {
+      "description": "Данные проверки одной ЭЦП.",
+      "type": "object",
+      "anyOf": [
+        {
+          "properties": {
+            "signatureNumber": {
+              "description": "Порядковый номер ЭЦП.",
+              "$ref": "#/definitions/Number"
+            },
+            "verifyType": {
+              "description": "Типы онлайн-запроса проверки принадлежности ключа.",
+              "$ref": "#/definitions/EDSverifyTypes"
+            },
+            "verifyId": {
+              "description": "Уникальный идентификатор онлайн-запроса проверки принадлежности ключа.",
+              "$ref": "#/definitions/Max35Text"
+            },
+            "verifyDateTime": {
+              "description": "Дата и время онлайн-запроса проверки принадлежности ключа.",
+              "$ref": "#/definitions/ISODateTime"
+            }
+          },
+          "required": [
+            "signatureNumber",
+            "verifyType",
+            "verifyId",
+            "verifyDateTime"
+          ]
+        },
+        {
+          "properties": {
+            "signatureNumber": {
+              "description": "Порядковый номер ЭЦП.",
+              "$ref": "#/definitions/Number"
+            },
+            "EDSattributes": {
+              "type": "array",
+              "description": "Атрибуты ключа, используемые при подписи/проверке подписи.",
+              "minItems": 0,
+              "items": {
+                "$ref": "#/definitions/accountConsentsVCPsignAttrs"
+              }
+            }
+          },
+          "required": [
+            "signatureNumber"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EDSverifyTypes": {
+      "description": "Типы онлайн-запроса проверки принадлежности ключа.",
+      "type": "string",
+      "enum": [
+        "Online Banking",
+        "LDAP"
+      ]
+    },
+    "ISODateTime": {
+      "description": "Определенный момент времени календарного дня, определяемый обязательной датой и обязательным временным компонентом, выраженный в формате всемирного координированного времени UTC (YYYY-MM-DDThh:mm:ss.sssZ), местного времени с форматом смещения UTC (YYYY-MM-DDThh:mm:ss.sss+/-hh:mm) или местном формате времени (YYYY-MM-DDThh:mm:ss.sss). Эти форматы определены в документе \"XML-схема Часть 2: Второе издание - Рекомендации W3C 28 октября 2004 года\", который приведён в соответствие со стандартом ISO 8601.",
+      "type": "string"
+    },
+    "Max100KBinary": {
+      "description": "Binary data of 100K maximum.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 102400
+    },
+    "Max2000Text": {
+      "description": "Обознает строку символов с максимальной длиной 2000 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "Max255Text": {
+      "description": "Обозначает строку символов с максимальной длиной 255 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "Max256Text": {
+      "description": "Обозначает строку символов с максимальной длиной 256 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "Max35Text": {
+      "description": "Обозначает строку символов с максимальной длиной 35 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 35
+    },
+    "Number": {
+      "description": "Число объектов, представленное в виде целого числа.",
+      "type": "number"
+    },
+    "OBPaymentConsentPUTspecialPartWithoutExternalRepresentation": {
+      "description": "Особенная часть запроса авторизации согласия на инициирование платежа через СДБО Поставщика API с HMAC или ЭЦП без формы внешнего представления.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "description": "Статус согласия на инициирование платежа.",
+          "$ref": "#/definitions/PaymentConsentStatuses"
+        },
+        "statusUpdateDateTime": {
+          "description": "Дата и время обновления согласия (по времени сервера СДБО).",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "clientSignatures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "description": "Данные СОК и/или АС, и ЭЦП Клиента.",
+            "$ref": "#/definitions/EDSspecialPart"
+          }
+        },
+        "verifiedSignatures": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "description": "Данные проверки одной ЭЦП.",
+            "$ref": "#/definitions/EDSverifiedSignature2"
+          }
+        },
+        "mobileNumber": {
+          "description": "Номер мобильного телефона Пользователя СДБО, на который был отправлен одноразовый пароль.",
+          "$ref": "#/definitions/PhoneNumber"
+        },
+        "OTP": {
+          "description": "Одноразовый пароль.",
+          "$ref": "#/definitions/Max256Text"
+        },
+        "OTPdateTime": {
+          "description": "Дата и время (по времени сервера СДБО) успешного ввода одноразового пароля.",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "HMAC": {
+          "description": "Код аутентификации сообщения на основе хэш-функции.",
+          "$ref": "#/definitions/Max256Text"
+        },
+        "subjectKeyIdentifier": {
+          "description": "Идентификатор ключа субъекта СДБО.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "signatureDateTime": {
+          "description": "Дата и время подписи (по времени сервера СДБО).",
+          "$ref": "#/definitions/ISODateTime"
+        }
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "clientSignatures",
+            "signatureDateTime",
+            "status",
+            "statusUpdateDateTime",
+            "subjectKeyIdentifier"
+          ]
+        },
+        {
+          "required": [
+            "HMAC",
+            "OTP",
+            "OTPdateTime",
+            "mobileNumber",
+            "signatureDateTime",
+            "status",
+            "statusUpdateDateTime",
+            "subjectKeyIdentifier"
+          ]
+        }
+      ]
+    },
+    "PaymentConsentStatuses": {
+      "description": "Статусы согласий на инициирование платежа.",
+      "type": "string",
+      "enum": [
+        "AwaitingAuthorisation",
+        "Authorised",
+        "Consumed",
+        "Rejected"
+      ]
+    },
+    "PhoneNumber": {
+      "description": "Набор данных, который определяет номер телефона в формате, устанавливаемом телефонными компаниями.",
+      "type": "string",
+      "pattern": "^(\\+[0-9]{1,3}\\-[\\(-\\)\\+\\-0-9]{1,30})$"
+    },
+    "YesNoIndicator": {
+      "description": "Обозначает тип ответа «Да» или «Нет» для элемента.",
+      "type": "boolean"
+    },
+    "accountConsentsVCPsignAttrs": {
+      "description": "Атрибут расширенного использования ключа, используемые при подписи/проверке подписи.",
+      "type": "object",
+      "properties": {
+        "OID": {
+          "description": "Идентификатор объекта (атрибута) ключа.",
+          "$ref": "#/definitions/Max256Text"
+        },
+        "attributeValue": {
+          "description": "Значение атрибута ключа.",
+          "$ref": "#/definitions/Max2000Text"
+        }
+      },
+      "required": [
+        "OID",
+        "attributeValue"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "data": {
+      "description": "Запрос на перегенерацию Apikey для долгосрочного согласия на доступ к API \"Получение информации о счетах клиента\".",
+      "$ref": "#/definitions/accountIntent"
+    }
+  },
+  "required": [
+    "data"
+  ],
+  "definitions": {
+    "Max255Text": {
+      "description": "Обозначает строку символов с максимальной длиной 255 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "YesNoIndicator": {
+      "description": "Обозначает тип ответа «Да» или «Нет» для элемента.",
+      "type": "boolean"
+    },
+    "accountIntent": {
+      "additionalProperties": false,
+      "properties": {
+        "personalAccessUser": {
+          "description": "Идентификатор Пользователя API первого типа.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "allASPSPaccountType": {
+          "description": "Признак использования всех типов счетов Поставщика API",
+          "allOf": [
+            {
+              "$ref": "#/definitions/YesNoIndicator"
+            }
+          ]
+        }
+      },
+      "required": [
+        "personalAccessUser"
+      ],
+      "type": "object"
+    }
+  }
+}
