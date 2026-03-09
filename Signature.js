@@ -38,6 +38,37 @@ async function generateSignature(config,methodType,methodUri,commonHeaders,proje
     return signature
 }
 
+async function generateSignatureAccounts(config,methodType,methodUri,commonHeaders,projectName,requestBodyName,additionalInfo = {}){
+    let header = await generateHeaderAccounts(config)
+    let payload =await getRequestBody(projectName, requestBodyName)
+    await appendToDefinedFile("logs.txt","header",JSON.stringify(header))
+    console.log("Header \r\n" +JSON.stringify(header))
+    let headerB64 = convertToBase64URL(JSON.stringify(header))
+    let payloadB64 = convertToBase64URL(JSON.stringify(payload))
+    await appendToDefinedFile("logs.txt","headerB64",JSON.stringify(headerB64))
+    await appendToDefinedFile("logs.txt","payloadB64",JSON.stringify(payloadB64))
+    let signBody = {
+        "Auth":{
+            "CryptoType":1,
+            "KeyID":config.subjectKeyIdentifier,
+            "Password":config.password || "12345678"
+        },
+        "DataB64": convertToBase64(headerB64 + "." + payloadB64),
+        "OptAddAllCert":false,
+        "OptAddCert":true,
+        "OptCheckPrivateKey":true,
+        "OptReturnSignCert":true
+    }
+    await appendToDefinedFile("logs.txt","signBody",JSON.stringify(signBody))
+    console.log("DataB64 \r\n" + convertToBase64(headerB64 + "." + payloadB64))
+    let hash = await scCryptoSign(config,signBody)
+    await appendToDefinedFile("logs.txt","signedBody",JSON.stringify(hash))
+    console.log("signedData" + JSON.stringify(hash))
+    let signature = headerB64 +".."+ convertBase64ToBase64Url(hash.ResultB64)
+
+    return signature
+}
+
 async function generateHeader(config, commonHeaders){
   const baseUrl = config.baseUrl || "http://openbanking.asb.by";
   let headerRaw = {"alg": "BIGNS128",
@@ -92,6 +123,16 @@ async function generateHeader(config, commonHeaders){
   return sortObjectAlphabetically(headerRaw)
 }
 
+async function generateHeaderAccounts(config){
+    let jwsProtectedHeader = {
+        "alg":config.alg,
+        "crit": [config.baseUrl + "/asn1",config.baseUrl+"/crptPrvdr"],
+        "typ": config.typ
+    }
+    jwsProtectedHeader[ config.baseUrl + "/asn1"] = true
+    jwsProtectedHeader[ config.baseUrl + "/crptPrvdr"] = 1
+    return sortObjectAlphabetically(jwsProtectedHeader)
+}
 async function generatePayload(config,methodType,methodUrl,commonHeaders,projectName = "pispAuth",requestBodyName,additionalInfo){
     let requestBody = ""
     if (requestBodyName){
@@ -116,6 +157,10 @@ async function generatePayload(config,methodType,methodUrl,commonHeaders,project
     let hash = await scCryptoHash(config,cryptoHashBody)
     let payload = await getPayloadByMethodRouteNew(config, methodType,methodUrl,commonHeaders,additionalInfo)
     return payload
+}
+
+async function generatePayloadAccounts(config,methodType,methodUri,commonHeaders,projectName,requestBodyName,additionalInfo){
+
 }
 
 async function getPayloadByMethodRouteNew(config, methodType,methodUrl,commonHeaders,additionalInfo){
@@ -293,5 +338,6 @@ async function getPayloadByMethodRouteNew(config, methodType,methodUrl,commonHea
 
 module.exports = {
     generateSignature,
-    getPayloadByMethodRouteNew
+    getPayloadByMethodRouteNew,
+    generateSignatureAccounts
 }
