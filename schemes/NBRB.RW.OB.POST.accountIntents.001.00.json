@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "description": "Запрос на создание долгосрочного согласия на получение доступа к <a href=\"#RWAccountsAPI\" onclick=\"openSpoilerWithAnchor('#RWAccountsAPI',this)\">API \"Получение информации о счетах клиента\"</a>.",
+      "$ref": "#/definitions/accountIntent"
+    }
+  },
+  "required": [
+    "data"
+  ],
+  "definitions": {
+    "Max255Text": {
+      "description": "Обозначает строку символов с максимальной длиной 255 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "YesNoIndicator": {
+      "description": "Обозначает тип ответа «Да» или «Нет» для элемента.",
+      "type": "boolean"
+    },
+    "accountIntent": {
+      "type": "object",
+      "properties": {
+        "personalAccessUser": {
+          "description": "Идентификатор <a href=\"#PAU\" onclick=\"openSpoilerWithAnchor('#PAU',this)\">Пользователя API первого типа</a>.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "allASPSPaccountType": {
+          "description": "Признак использования всех типов счетов <a href=\"#ASPSP\" onclick=\"openSpoilerWithAnchor('#ASPSP',this)\"> Поставщика API</a>.",
+          "$ref": "#/definitions/YesNoIndicator"
+        }
+      },
+      "required": [
+        "personalAccessUser"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

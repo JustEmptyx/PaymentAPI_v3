@@ -1,0 +1,1192 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "data": {
+      "description": "Запрос авторизации согласия на инициирование рекуррентного платежа.",
+      "$ref": "#/definitions/OBPaymentConsentVRPPATCHwithHMACcommonPart"
+    },
+    "risk": {
+      "description": "Полезная нагрузка риска отправляется Пользователем API Поставщику API. Предусмотрена для указания дополнительных деталей для скоринга рисков для согласия на инициирование платежей Пользователем API.",
+      "$ref": "#/definitions/risk"
+    },
+    "specialPart": {
+      "description": "Особенная часть запроса авторизации согласия на инициирование платежа.",
+      "$ref": "#/definitions/OBPaymentConsentPUTwithSpecialPart"
+    }
+  },
+  "required": [
+    "data",
+    "risk",
+    "specialPart"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "ActiveCurrencyCode": {
+      "description": "Код, присвоенный валюте Агентством поведению стандарта в соответствии с международной схемой идентификации, как описано в последней редакции международного стандарта ISO 4217 ”Коды для представления валют и фондов“.",
+      "type": "string",
+      "pattern": "^([A-Z]{3,3})$"
+    },
+    "CategoryPurposeCode": {
+      "description": "Код категории назначения платежа (согласно справочнику E004).",
+      "type": "string",
+      "pattern": "^([0-9A-Z]{4,4})$"
+    },
+    "ControlParameters": {
+      "description": "Параметры управления, при которых должна происходить инициация рекуррентного платежа.",
+      "type": "object",
+      "properties": {
+        "fromPaymentDate": {
+          "description": "Дата начала действия долгосрочного согласия включительно.",
+          "$ref": "#/definitions/ISODate"
+        },
+        "toPaymentDate": {
+          "description": "Дата окончания действия долгосрочного согласия включительно.",
+          "$ref": "#/definitions/ISODate"
+        },
+        "maximumIndividualAmount": {
+          "description": "Максимальная единовременна я сумма, которая может быть указана в платежной инструкции.",
+          "$ref": "#/definitions/OBActiveCurrencyAndAmount_SimpleType"
+        },
+        "currency": {
+          "description": "Валюта максимальной суммы платежа.",
+          "$ref": "#/definitions/ActiveCurrencyCode"
+        },
+        "periodicLimits": {
+          "description": "Данные по лимиту суммы за определенный период.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/PeriodicLimits"
+          }
+        },
+        "supplementaryData": {
+          "description": "Дополнительная информация, которая не может быть отражена в структурированных элементах и/или других специальных блоках.",
+          "$ref": "#/definitions/OBSupplementaryData"
+        }
+      },
+      "required": [
+        "currency",
+        "periodicLimits"
+      ],
+      "additionalProperties": false
+    },
+    "CountryCode": {
+      "description": "Код идентификации страны, зависимых территорий или других особых административно-территориальных образований, согласно списку названий стран, полученному от Организации Объединенных Наций (ISO 3166, Код Alpha-2).",
+      "type": "string",
+      "pattern": "^([A-Z]{2,2})$"
+    },
+    "EDSspecialPart": {
+      "description": "Расширяемая особенная часть электронного документа.",
+      "type": "object",
+      "properties": {
+        "signatureNumber": {
+          "description": "Порядковый номер ЭЦП.",
+          "$ref": "#/definitions/Number"
+        },
+        "signature": {
+          "description": "ЭЦП.",
+          "$ref": "#/definitions/Max100KBinary"
+        },
+        "cryptoType": {
+          "description": "Тип криптопровайдера.",
+          "$ref": "#/definitions/Number"
+        },
+        "subjectKeyIdentifier": {
+          "description": "Идентификатор ключа субъекта.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "signatureDateTime": {
+          "description": "Дата и время подписи (по времени сервера).",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "includePreviousSignatures": {
+          "description": "\"Проверять предыдущие подписи, включая их в Общую часть электронного документа.",
+          "$ref": "#/definitions/YesNoIndicator"
+        },
+        "EDSattributes": {
+          "type": "array",
+          "items": {
+            "description": "Атрибуты ключа, используемые при подписи/проверке подписи.",
+            "$ref": "#/definitions/accountConsentsVCPsignAttrs"
+          }
+        }
+      },
+      "required": [
+        "signatureNumber",
+        "signature",
+        "subjectKeyIdentifier",
+        "signatureDateTime",
+        "includePreviousSignatures"
+      ],
+      "additionalProperties": false
+    },
+    "Exact4NumericText": {
+      "description": "Обозначает цифровую строку символов с длиной 4 символа.",
+      "type": "string",
+      "pattern": "^([0-9]{4,4})$"
+    },
+    "Exact4UpperCaseAlphaText": {
+      "description": "Обозначает строку из прописных латинских букв с длиной 4 символа.",
+      "type": "string",
+      "pattern": "^([A-Z]{4,4})$"
+    },
+    "ISODate": {
+      "description": "Элемент данных, содержащий значение даты, указывается согласно расширенному формату ГОСТ ISO 8601, формат YYYY-ММ-DD.",
+      "type": "string"
+    },
+    "ISODateTime": {
+      "description": "Определенный момент времени календарного дня, определяемый обязательной датой и обязательным временным компонентом, выраженный в формате всемирного координированного времени UTC (YYYY-MM-DDThh:mm:ss.sssZ), местного времени с форматом смещения UTC (YYYY-MM-DDThh:mm:ss.sss+/-hh:mm) или местном формате времени (YYYY-MM-DDThh:mm:ss.sss). Эти форматы определены в документе \"XML-схема Часть 2: Второе издание - Рекомендации W3C 28 октября 2004 года\", который приведён в соответствие со стандартом ISO 8601.",
+      "type": "string"
+    },
+    "ImpliedCurrencyAndAmountString": {
+      "description": "Число денежных единиц, указанных в активной валюте, где единица валюты точно определена и соответствует стандарту ISO 4217. Десятичным разделителем является точка. Примечание: нулевая сумма считается положительной суммой.",
+      "type": "string",
+      "pattern": "^([0-9]{1,18}|[0-9]{1,18}[\\w\\D][0-9]{1,5})$"
+    },
+    "Max100KBinary": {
+      "description": "Binary data of 100K maximum.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 102400
+    },
+    "Max10MbBinary": {
+      "description": "Бинарные данные объемом не более 10Mb.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10485760
+    },
+    "Max140Text": {
+      "description": "Обознает строку символов с максимальной длиной 140 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 140
+    },
+    "Max16Text": {
+      "description": "Обознает строку символов с максимальной длиной 16 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16
+    },
+    "Max2000Text": {
+      "description": "Обознает строку символов с максимальной длиной 2000 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "Max2048Text": {
+      "description": "Обознает строку символов с максимальной длиной 2048 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "Max255Text": {
+      "description": "Обозначает строку символов с максимальной длиной 255 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "Max256Text": {
+      "description": "Обозначает строку символов с максимальной длиной 256 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "Max34Text": {
+      "description": "Обозначает строку символов с максимальной длиной 34 символа.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 34
+    },
+    "Max35Text": {
+      "description": "Обозначает строку символов с максимальной длиной 35 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 35
+    },
+    "Max420Text": {
+      "description": "Обозначает строку символов с максимальной длиной 420 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 420
+    },
+    "Max70Text": {
+      "description": "Обозначает строку символов с максимальной длиной 70 символов.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 70
+    },
+    "Number": {
+      "description": "Число объектов, представленное в виде целого числа.",
+      "type": "number"
+    },
+    "OBActiveCurrencyAndAmount_SimpleType": {
+      "description": "Число денежных единиц, указанных в активной валюте, где единица валюты точно определена и соответствует стандарту ISO 4217. Десятичным разделителем является точка.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 19,
+      "pattern": "^[0-9]{1,18}\\.[0-9]{1,5}$|^[0-9]{1,18}$"
+    },
+    "OBBranchAndFinancialInstitutionIdentification": {
+      "description": "Информация о банке.",
+      "type": "object",
+      "properties": {
+        "identificationClearingSystem": {
+          "description": "Идентификация клиринговой системы: в кодированной форме (согласно справочнику E005) или собственная идентификация.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "identification": {
+          "description": "Зарегистрированный код BIC (BICFI) или идентификация участника клиринговой системы.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "name": {
+          "description": "Наименование банка.",
+          "$ref": "#/definitions/Max140Text"
+        }
+      },
+      "required": [
+        "identification",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "OBContactDetails": {
+      "description": "Контактная информация, набор элементов, используемых для указания того, как связаться со стороной.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Наименование, под которым известна сторона и которое обычно используется для ее идентификации.",
+          "$ref": "#/definitions/Max140Text"
+        },
+        "phoneNumber": {
+          "description": "Набор данных, который определяет номер телефона в формате, устанавливаемом операторами электросвязи.",
+          "$ref": "#/definitions/PhoneNumber"
+        },
+        "mobileNumber": {
+          "description": "Набор данных, который определяет номер мобильного телефона в формате, устанавливаемом операторами электросвязи.",
+          "$ref": "#/definitions/PhoneNumber"
+        },
+        "faxNumber": {
+          "description": "Набор данных, который определяет номер факса в формате, устанавливаемом операторами электросвязи.",
+          "$ref": "#/definitions/PhoneNumber"
+        },
+        "emailAddress": {
+          "description": "Адрес электронной почты.",
+          "$ref": "#/definitions/Max2048Text"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "OBOnlineBankingAndUser2": {
+      "description": "Данные СДБО и Пользователя СДБО.",
+      "type": "object",
+      "properties": {
+        "OBid": {
+          "description": "Уникальный идентификатор СДБО.",
+          "$ref": "#/definitions/UUIDv4Identifier"
+        },
+        "OBname": {
+          "description": "Наименование СДБО.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "OBuserId": {
+          "description": "Уникальный идентификатор Учётной записи пользователя СДБО.",
+          "$ref": "#/definitions/Max256Text"
+        },
+        "OBuserName": {
+          "description": "Наименование Пользователя СДБО.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "countryOfResidence": {
+          "description": "Место регистрации Пользователя СДБО как физического лица.",
+          "$ref": "#/definitions/CountryCode"
+        },
+        "countryNameOfResidence": {
+          "description": "Место регистрации Пользователя СДБО физического лица в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "privateIdentification": {
+          "description": "\"Уникальная и однозначная идентификация Пользователя СДБО как физического лица.",
+          "$ref": "#/definitions/OBPrivateIdentificationXS2A"
+        }
+      },
+      "required": [
+        "OBid",
+        "OBname",
+        "OBuserId",
+        "OBuserName",
+        "countryOfResidence",
+        "countryNameOfResidence",
+        "privateIdentification"
+      ],
+      "additionalProperties": false
+    },
+    "OBOrganisationIdentificationXS2A": {
+      "description": "Уникальный и однозначный способ идентификации Пользователя API как организации.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Код схемы идентификации организации.",
+          "$ref": "#/definitions/Exact4UpperCaseAlphaText"
+        },
+        "codeName": {
+          "description": "Схема идентификации организации в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "identification": {
+          "description": "Уникальная идентификация организации.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "identificationStatusName": {
+          "description": "Статус стороны в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        }
+      },
+      "required": [
+        "code",
+        "codeName",
+        "identification",
+        "identificationStatusName"
+      ],
+      "additionalProperties": false
+    },
+    "OBPISPOrganisationIdentificationXS2A": {
+      "description": "Уникальный и однозначный способ идентификации Поставщика платёжных услуг как организации.",
+      "type": "object",
+      "properties": {
+        "organisationIdentification": {
+          "description": "Уникальный и однозначный способ идентификации Поставщика платёжных услуг как организации.",
+          "$ref": "#/definitions/OBOrganisationIdentificationXS2A"
+        },
+        "extendedOrganisationIdentificationIdentification": {
+          "type": "array",
+          "description": "Расширенная идентификации Поставщика платёжных услуг, являющегося Пользователем API 2 типа.",
+          "minItems": 0,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/definitions/OBextendedOrganisationIdentificationXS2A"
+          }
+        }
+      },
+      "required": [
+        "organisationIdentification",
+        "extendedOrganisationIdentificationIdentification"
+      ],
+      "additionalProperties": false
+    },
+    "OBPISPXS2A": {
+      "description": "Данные Поставщика платёжных услуг.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PISPid": {
+          "description": "Уникальный идентификатор Поставщика платёжных услуг.",
+          "$ref": "#/definitions/UUIDv4Identifier"
+        },
+        "PISP": {
+          "description": "Поставщик платёжных услуг.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "PISPidentification": {
+          "type": "array",
+          "description": "Данные идентификации Поставщика платёжных услуг.",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/OBPISPXS2Aidentification"
+          }
+        }
+      },
+      "required": [
+        "PISPid",
+        "PISP",
+        "PISPidentification"
+      ]
+    },
+    "OBPISPXS2Aidentification": {
+      "type": "object",
+      "description": "Данные идентификации Пользователя API.",
+      "properties": {
+        "PISPname": {
+          "description": "Наименование Пользователя API.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "countryOfResidence": {
+          "description": "Страна резидентства Поставщика платёжных услуг.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "countryNameOfResidence": {
+          "description": "Страна резидентства Поставщика платёжных услуг в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "organisationIdentification": {
+          "description": "Уникальный и однозначный способ идентификации Поставщика платёжных услуг как организации.",
+          "$ref": "#/definitions/OBPISPOrganisationIdentificationXS2A"
+        },
+        "privateIdentification": {
+          "description": "Уникальный и однозначный способ идентификации Поставщика платёжных услуг как физического лица.",
+          "$ref": "#/definitions/OBPrivateIdentificationXS2A2"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "PISPname",
+            "countryOfResidence",
+            "organisationIdentification"
+          ]
+        },
+        {
+          "required": [
+            "PISPname",
+            "countryOfResidence",
+            "privateIdentification"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "OBPSUorPAUXS2A2": {
+      "description": "Данные Клиента.",
+      "type": "object",
+      "properties": {
+        "PSUorPAUid": {
+          "description": "Уникальный идентификатор Клиента.",
+          "$ref": "#/definitions/UUIDv4Identifier"
+        },
+        "PSUorPAU": {
+          "description": "Клиент.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "PSUorPAUname": {
+          "description": "Наименование Клиента.",
+          "$ref": "#/definitions/Max255Text"
+        }
+      },
+      "required": [
+        "PSUorPAUid",
+        "PSUorPAU",
+        "PSUorPAUname"
+      ],
+      "additionalProperties": false
+    },
+    "OBPartyAccount": {
+      "description": "Идентификация счёта.",
+      "type": "object",
+      "properties": {
+        "schemeName": {
+          "description": "Наименование схемы идентификации. Схема для осуществления платежа: BY.NBRB.IBAN, BY.NBRB.OTHER, BY.ERIP.CLIENT.",
+          "$ref": "#/definitions/Max140Text"
+        },
+        "identification": {
+          "description": "Уникальная и однозначная идентификация счета, согласованная между владельцем счета и банком, обслуживающим счет (IBAN или идентификация в иной форме).",
+          "$ref": "#/definitions/Max34Text"
+        }
+      },
+      "required": [
+        "schemeName",
+        "identification"
+      ],
+      "additionalProperties": false
+    },
+    "OBPartyCreditorXS2A": {
+      "description": "Информация о бенефициаре.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Наименование бенефициара.",
+          "$ref": "#/definitions/Max140Text"
+        },
+        "countryOfResidence": {
+          "description": "Страна резидентства как юридического лица, место регистрации как физического лица.",
+          "$ref": "#/definitions/CountryCode"
+        },
+        "countryNameOfResidence": {
+          "description": "Наименование страны резидентства как юридического лица, место регистрации как физического лица.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "organisationIdentification": {
+          "description": "Уникальный и однозначный способ идентификации организации.",
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/definitions/OBOrganisationIdentificationXS2A"
+          }
+        },
+        "privateIdentification": {
+          "description": "Уникальная и однозначная идентификация физического лица.",
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/definitions/OBPrivateIdentificationXS2A"
+          }
+        },
+        "postalAddress": {
+          "description": "Адрес, информация, которая позволяет найти и идентифицирует конкретный адрес в формате, устанавливаемом почтовыми службами.",
+          "$ref": "#/definitions/OBPostalAddress"
+        },
+        "contactDetails": {
+          "description": "Контактная информация, набор элементов, используемых для указания того, как связаться со стороной.",
+          "$ref": "#/definitions/OBContactDetails"
+        }
+      },
+      "required": [
+        "name",
+        "organisationIdentification",
+        "privateIdentification"
+      ],
+      "additionalProperties": false
+    },
+    "OBPartyDebtorXS2A": {
+      "description": "Информация о плательщике.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Наименование плательщика.",
+          "$ref": "#/definitions/Max140Text"
+        },
+        "countryOfResidence": {
+          "description": "Страна резидентства как юридического лица, место регистрации как физического лица.",
+          "$ref": "#/definitions/CountryCode"
+        },
+        "countryNameOfResidence": {
+          "description": "Наименование страны резидентства как юридического лица, место регистрации как физического лица.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "organisationIdentification": {
+          "description": "Уникальный и однозначный способ идентификации организации.",
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/definitions/OBOrganisationIdentificationXS2A"
+          }
+        },
+        "privateIdentification": {
+          "description": "Уникальная и однозначная идентификация физического лица.",
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/definitions/OBPrivateIdentificationXS2A"
+          }
+        },
+        "postalAddress": {
+          "description": "Адрес, информация, которая позволяет найти и идентифицирует конкретный адрес в формате, устанавливаемом почтовыми службами.",
+          "$ref": "#/definitions/OBPostalAddress"
+        },
+        "contactDetails": {
+          "description": "Контактная информация, набор элементов, используемых для указания того, как связаться со стороной.",
+          "$ref": "#/definitions/OBContactDetails"
+        }
+      },
+      "required": [
+        "name",
+        "organisationIdentification",
+        "privateIdentification"
+      ],
+      "additionalProperties": false
+    },
+    "OBPaymentConsentVRPPATCHwithHMACcommonPart": {
+      "description": "Общая часть запроса авторизации согласия на инициирование рекуррентного платежа.",
+      "type": "object",
+      "properties": {
+        "ASPSP": {
+          "description": "Информация о банке.",
+          "$ref": "#/definitions/OBBranchAndFinancialInstitutionIdentification"
+        },
+        "OB": {
+          "description": "Данные СДБО и Пользователя СДБО.",
+          "$ref": "#/definitions/OBOnlineBankingAndUser2"
+        },
+        "VRPConsentId": {
+          "description": "Идентификатор согласия.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "PISP": {
+          "description": "Данные Поставщика платёжных услуг.",
+          "$ref": "#/definitions/OBPISPXS2A"
+        },
+        "PSUorPAU": {
+          "description": "Идентификатор Клиента.",
+          "$ref": "#/definitions/OBPSUorPAUXS2A2"
+        },
+        "creationDateTime": {
+          "description": "Дата и время создания согласия.",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "status": {
+          "description": "Статус согласия на инициирование платежа.",
+          "$ref": "#/definitions/PaymentConsentStatuses"
+        },
+        "statusUpdateDateTime": {
+          "description": "Дата и время обновления согласия (по времени сервера СДБО).",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "controlParameters": {
+          "description": "Параметры управления, при которых должна происходить инициация рекуррентного платежа.",
+          "$ref": "#/definitions/ControlParameters"
+        },
+        "initiation": {
+          "description": "Инициирующая сторона отправляет параметры данных Поставщику API. Данный объект используется для запроса перевода средств со счёта плательщика на счёт получателя средств для одиночного платежа.",
+          "$ref": "#/definitions/OBPaymentConsentsVRPInitiationXS2A"
+        },
+        "externalRepresentation": {
+          "description": "Форма внешнего представления согласия на получение информации о счете (счетах) Клиента в формате PDF/A.",
+          "$ref": "#/definitions/Max10MbBinary"
+        }
+      },
+      "required": [
+        "ASPSP",
+        "OB",
+        "VRPConsentId",
+        "PISP",
+        "PSUorPAU",
+        "creationDateTime",
+        "status",
+        "statusUpdateDateTime",
+        "controlParameters",
+        "initiation",
+        "externalRepresentation"
+      ],
+      "additionalProperties": false
+    },
+    "OBPaymentConsentPUTwithSpecialPart": {
+      "description": "Особенная часть запроса авторизации согласия на инициирование платежа через СДБО Поставщика API с ЭЦП или HMAC",
+      "type": "object",
+      "properties": {
+        "status": {
+          "description": "Статус согласия на инициирование платежа.",
+          "$ref": "#/definitions/PaymentConsentStatuses"
+        },
+        "statusUpdateDateTime": {
+          "description": "Дата и время обновления согласия (по времени сервера СДБО).",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "clientSignatures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "description": "Данные СОК и/или АС, и ЭЦП Клиента.",
+            "$ref": "#/definitions/EDSspecialPart"
+          }
+        },
+        "mobileNumber": {
+          "description": "Номер мобильного телефона Пользователя СДБО, на который был отправлен одноразовый пароль.",
+          "$ref": "#/definitions/PhoneNumber"
+        },
+        "OTP": {
+          "description": "Одноразовый пароль.",
+          "$ref": "#/definitions/Max256Text"
+        },
+        "OTPdateTime": {
+          "description": "Дата и время (по времени сервера СДБО) успешного ввода одноразового пароля.",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "HMAC": {
+          "description": "Код аутентификации сообщения на основе хэш-функции.",
+          "$ref": "#/definitions/Max256Text"
+        },
+        "subjectKeyIdentifier": {
+          "description": "Идентификатор ключа субъекта СДБО.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "signatureDateTime": {
+          "description": "Дата и время подписи (по времени сервера СДБО).",
+          "$ref": "#/definitions/ISODateTime"
+        },
+        "externalRepresentationSpecialPart": {
+          "description": "Форма внешнего представления особенной части согласия на инициирование платежа в формате PDF/A.",
+          "$ref": "#/definitions/Max100KBinary"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "status",
+            "statusUpdateDateTime",
+            "clientSignatures",
+            "subjectKeyIdentifier",
+            "signatureDateTime",
+            "externalRepresentationSpecialPart"
+          ]
+        },
+        {
+          "required": [
+            "status",
+            "statusUpdateDateTime",
+            "mobileNumber",
+            "OTP",
+            "OTPdateTime",
+            "HMAC",
+            "subjectKeyIdentifier",
+            "signatureDateTime",
+            "externalRepresentationSpecialPart"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "OBPaymentConsentsVRPInitiationXS2A": {
+      "description": "Параметры, которые отправляются инициирующей стороной Поставщику API. Используется для запроса об инициировании платежа плательщиком на счет получателя средств.",
+      "type": "object",
+      "properties": {
+        "localInstrument": {
+          "description": "Дополнительное описание сервиса или уровня обслуживания.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "amount": {
+          "description": "Сумма денежных средств, которая должна быть переведена от плательщика бенефициару до вычета комиссионных вознаграждений, выраженная в валюте, определённой инициирующей стороной.",
+          "$ref": "#/definitions/OBActiveCurrencyAndAmount_SimpleType"
+        },
+        "currency": {
+          "description": "Валюта суммы платежа.",
+          "$ref": "#/definitions/ActiveCurrencyCode"
+        },
+        "currencyName": {
+          "description": "Валюта суммы платежа в текстовой форме.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "debtor": {
+          "description": "Информация о плательщике.",
+          "$ref": "#/definitions/OBPartyDebtorXS2A"
+        },
+        "debtorAccount": {
+          "description": "Идентификация счёта плательщика.",
+          "$ref": "#/definitions/OBPartyAccount"
+        },
+        "debtorAgent": {
+          "description": "Информация о банке, обслуживающем счет плательщика.",
+          "$ref": "#/definitions/OBBranchAndFinancialInstitutionIdentification"
+        },
+        "creditor": {
+          "description": "Информация о бенефициаре.",
+          "$ref": "#/definitions/OBPartyCreditorXS2A"
+        },
+        "creditorAccount": {
+          "description": "Идентификация счёта бенефициара.",
+          "$ref": "#/definitions/OBPartyAccount"
+        },
+        "creditorAgent": {
+          "description": "Информация о банке, обслуживающем счет бенефициара.",
+          "$ref": "#/definitions/OBBranchAndFinancialInstitutionIdentification"
+        },
+        "remittanceInformation": {
+          "description": "Информация о переводе денежных средств. Предоставляется для сопоставления записи с позициями, расчеты по которым должны быть осуществлены с помощью перевода. Например, коммерческие счета-фактуры в системе учета дебиторской задолженности.",
+          "$ref": "#/definitions/OBRemittanceInformation"
+        }
+      },
+      "required": [
+        "debtor",
+        "debtorAccount",
+        "creditor",
+        "creditorAccount"
+      ],
+      "additionalProperties": false
+    },
+    "OBPostalAddress": {
+      "description": "Адрес, информация, которая позволяет найти и идентифицирует конкретный адрес в формате, устанавливаемом почтовыми службами.",
+      "type": "object",
+      "properties": {
+        "country": {
+          "description": "Страна, указывается в кодированной форме (согласно ОКРБ 017 и справочника N013).",
+          "$ref": "#/definitions/CountryCode"
+        },
+        "countrySubDivision": {
+          "description": "Регион/область страны.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "districtName": {
+          "description": "Название административно-территориальной единицы, например: район, сельсовет.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "townName": {
+          "description": "Название населенного пункта, может заполняться согласно единому реестру административно-территориальных и территориальных единиц Республики Беларусь с указанием типа населенного пункта (согласно справочнику N091) перед его названием через пробел.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "townLocationName": {
+          "description": "Конкретное наименование места в населенном пункте. Используется при необходимости для указания кода СОАТО в соответствии с общегосударственным классификатором Республики Беларусь ОКРБ 003-2017 ”Система обозначений объектов административно-территориального деления и населенных пунктов“, утвержденным постановлением Государственного комитета по стандартизации Республики Беларусь от 6 марта 2017 г. № 17, и согласно справочнику N058.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "postCode": {
+          "description": "Почтовый код (индекс).",
+          "$ref": "#/definitions/Max16Text"
+        },
+        "streetName": {
+          "description": "Наименование улицы, может заполняться согласно реестру наименований улиц и дорог с указанием типа элемента улично-дорожной сети (согласно справочнику N098) перед его названием через пробел.",
+          "$ref": "#/definitions/Max70Text"
+        },
+        "buildingNumber": {
+          "description": "Номер дома.",
+          "$ref": "#/definitions/Max16Text"
+        },
+        "room": {
+          "description": "Номер квартиры, помещения или комнаты.",
+          "$ref": "#/definitions/Max16Text"
+        },
+        "addressLine": {
+          "description": "Информация, которая позволяет найти и идентифицирует конкретный адрес в соответствии с данными почтовых служб, в произвольном текстовом формате.",
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/definitions/Max70Text"
+          }
+        }
+      },
+      "required": [
+        "country",
+        "addressLine"
+      ],
+      "additionalProperties": false
+    },
+    "OBPrivateIdentification": {
+      "description": "Уникальная и однозначная идентификация физического лица.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Наименование схемы идентификации в кодированной форме, опубликованной во внешнем списке. Для кодов физического лица для элемента данных ”Код“ используются следующие значения: CCPT – документ, удостоверяющий личность; NIDN – идентификационный номер; CUST – идентификация клиента.",
+          "$ref": "#/definitions/Exact4UpperCaseAlphaText"
+        },
+        "identification": {
+          "description": "Идентификация физического лица. Если элемент данных code принимает значение NIDN, то элемент данных issuer не заполняется. Если код вида документа, удостоверяющего личность (согласно справочнику N023), равен 06, 16, 17, формат [A-Z0-9]{14}. Если код вида документа, удостоверяющего личность (согласно справочнику N023), равен 03, 15, формат [0-9]{7}[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{1}. Если элемент данных code принимает значение CCPT, то элемент данных issuer заполняется. [0-9]{2} – код вида документа, удостоверяющего личность (согласно справочнику N023); [0-9]{8} – дата выдачи документа, удостоверяющего личность, в формате YYYYMMDD (год, месяц, день); [AZБГДЁЖЗИЙЛПУФЦЧШЩЪЫЬЭЮЯ0-9/-_]{1,23} – серия и номер документа, удостоверяющего личность ([A-Z0-9]{9} - если код вида документа, удостоверяющего личность, 06, 16, 17); [AZ]{2}[0-9]{7} - если код вида документа, удостоверяющего личность, равен 03, 15). Если элемент данных code принимает значение CUST, то элемент данных issuer не заполняется. Указывается лицевой счет, номер договора плательщика у бенефициара, УНП, фамилия и инициалы и т.п.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "issuer": {
+          "description": "Наименование или код органа, выдавшего документ.",
+          "$ref": "#/definitions/Max35Text"
+        }
+      },
+      "required": [
+        "code",
+        "identification"
+      ],
+      "additionalProperties": false
+    },
+    "OBPrivateIdentificationXS2A": {
+      "description": "Уникальная и однозначная идентификация как физического лица.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Код схемы идентификации физического лица.",
+          "$ref": "#/definitions/Exact4UpperCaseAlphaText"
+        },
+        "codeName": {
+          "description": "Код схемы идентификации физического лица в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "identification": {
+          "description": "Идентификация физического лица.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "identificationDocumentTypeName": {
+          "description": "Код вида документа, удостоверяющего личность, в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "issuer": {
+          "description": "Наименование органа, выдавшего документ.",
+          "$ref": "#/definitions/Max35Text"
+        }
+      },
+      "required": [
+        "code",
+        "codeName",
+        "identification"
+      ],
+      "additionalProperties": false
+    },
+    "OBPrivateIdentificationXS2A2": {
+      "description": "Уникальная и однозначная идентификация как физического лица.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Код схемы идентификации физического лица.",
+          "$ref": "#/definitions/Exact4UpperCaseAlphaText"
+        },
+        "codeName": {
+          "description": "Код схемы идентификации физического лица.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "identification": {
+          "description": "Идентификация физического лица.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "identificationDocumentTypeName": {
+          "description": "Код вида документа, удостоверяющего личность, в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "issuer": {
+          "description": "Наименование органа, выдавшего документ",
+          "$ref": "#/definitions/Max35Text"
+        }
+      },
+      "required": [
+        "code",
+        "identification"
+      ],
+      "additionalProperties": false
+    },
+    "OBReferredDocument": {
+      "description": "Информация о ссылочном документе.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "Идентификация типа ссылочного документа.",
+          "$ref": "#/definitions/CategoryPurposeCode"
+        },
+        "number": {
+          "description": "Номер ссылочного документа.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "relatedDate": {
+          "description": "Дата ссылочного документа.",
+          "$ref": "#/definitions/ISODate"
+        },
+        "remittedAmount": {
+          "description": "Сумма денежных средств за указанный документ.",
+          "$ref": "#/definitions/ImpliedCurrencyAndAmountString"
+        },
+        "invoicer": {
+          "description": "Уполномоченный орган (взыскатель).",
+          "$ref": "#/definitions/Max140Text"
+        }
+      },
+      "required": [
+        "type",
+        "number",
+        "relatedDate"
+      ],
+      "additionalProperties": false
+    },
+    "OBRemittanceInformation": {
+      "description": "Информация о переводе денежных средств. Предоставляется для сопоставления записи с позициями, расчеты по которым должны быть осуществлены с помощью перевода. Например, коммерческие счета-фактуры в системе учета дебиторской задолженности.",
+      "type": "object",
+      "properties": {
+        "categoryPurposeCode": {
+          "description": "Код категории назначения платежа.",
+          "$ref": "#/definitions/CategoryPurposeCode"
+        },
+        "proprietaryPurpose": {
+          "description": "Код назначения платежа и очерёдность.",
+          "$ref": "#/definitions/ProprietaryPurposeCode"
+        },
+        "unstructured": {
+          "description": "Информация, позволяющая сопоставлять/сверять записи с позициями, для которых предназначен платеж, такими, как коммерческие счета в системе дебиторской задолженности, в неструктурированной форме.",
+          "$ref": "#/definitions/Max420Text"
+        },
+        "referredDocument": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "description": "Информация о ссылочных документах.",
+            "$ref": "#/definitions/OBReferredDocument"
+          }
+        }
+      },
+      "required": [
+        "categoryPurposeCode",
+        "proprietaryPurpose",
+        "referredDocument"
+      ],
+      "additionalProperties": false
+    },
+    "OBSupplementaryData": {
+      "description": "Дополнительная информация, которая не может быть отражена в структурированных элементах и/или других специальных блоках.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "OBextendedOrganisationIdentificationXS2A": {
+      "description": "Расширенная идентификации Поставщика платёжных услуг, являющегося Пользователем API 2 типа.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Код схемы идентификации организации.",
+          "$ref": "#/definitions/Exact4UpperCaseAlphaText"
+        },
+        "codeName": {
+          "description": "Схема идентификации организации в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        },
+        "identification": {
+          "description": "Уникальная идентификация организации.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "identificationInformation": {
+          "description": "Информация по идентификации в текстовой форме.",
+          "$ref": "#/definitions/Max255Text"
+        }
+      },
+      "required": [
+        "code",
+        "codeName",
+        "identification",
+        "identificationInformation"
+      ],
+      "additionalProperties": false
+    },
+    "PaymentConsentStatuses": {
+      "description": "Статусы согласий на инициирование платежа.",
+      "type": "string",
+      "enum": [
+        "AwaitingAuthorisation",
+        "Authorised",
+        "Expired",
+        "Consumed",
+        "Rejected",
+        "Revoked"
+      ]
+    },
+    "PeriodicLimits": {
+      "description": "Данные по лимиту суммы за определенный период.",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "description": "Лимит суммы рекуррентного платежа за определенный период.",
+          "$ref": "#/definitions/OBActiveCurrencyAndAmount_SimpleType"
+        },
+        "currency": {
+          "description": "Валюта суммы платежа.",
+          "$ref": "#/definitions/ActiveCurrencyCode"
+        },
+        "periodType": {
+          "description": "Тип периода согласия на инициирование платежа.",
+          "$ref": "#/definitions/TypePaymentPeriodStaticType"
+        }
+      },
+      "required": [
+        "amount",
+        "currency",
+        "periodType"
+      ],
+      "additionalProperties": false
+    },
+    "PhoneNumber": {
+      "description": "Набор данных, который определяет номер телефона в формате, устанавливаемом телефонными компаниями.",
+      "type": "string",
+      "pattern": "^(\\+[0-9]{1,3}\\-[\\(-\\)\\+\\-0-9]{1,30})$"
+    },
+    "ProprietaryPurposeCode": {
+      "description": "Назначение платежа и очередность.",
+      "type": "string",
+      "pattern": "^([0-1][0-9]{5,5}[\\w\\D][0-9]{2,2})$"
+    },
+    "TypePaymentPeriodStaticType": {
+      "description": "Типы периода.",
+      "type": "string",
+      "enum": [
+        "Day",
+        "Week",
+        "Month",
+        "Quarter",
+        "SemiAnnual",
+        "Annual"
+      ]
+    },
+    "UUIDv4Identifier": {
+      "description": "Универсальный уникальный идентификатор (UUID) версии 4, как описано в RFC 4122.",
+      "type": "string",
+      "pattern": "^(([0-9a-f]{8,8}\\-[0-9a-f]{4,4}\\-4[0-9a-f]{3,3}\\-[8-9a-b][0-9a-f]{3,3}\\-[0-9a-f]{12,12}))$"
+    },
+    "YesNoIndicator": {
+      "description": "Обозначает тип ответа «Да» или «Нет» для элемента.",
+      "type": "boolean"
+    },
+    "accountConsentsVCPsignAttrs": {
+      "description": "Атрибут расширенного использования ключа, используемые при подписи/проверке подписи.",
+      "type": "object",
+      "properties": {
+        "OID": {
+          "description": "Идентификатор объекта (атрибута) ключа.",
+          "$ref": "#/definitions/Max256Text"
+        },
+        "attributeValue": {
+          "description": "Значение атрибута ключа.",
+          "$ref": "#/definitions/Max2000Text"
+        }
+      },
+      "required": [
+        "OID",
+        "attributeValue"
+      ],
+      "additionalProperties": false
+    },
+    "postalAddress": {
+      "description": "Компонент ”Адрес“ должен содержать элементы данных, позволяющие однозначно идентифицировать местонахождение объекта.",
+      "type": "object",
+      "properties": {
+        "country": {
+          "description": "Страна (согласно ОКРБ 017 и справочнику N013).",
+          "$ref": "#/definitions/CountryCode"
+        },
+        "countrySubDivision": {
+          "description": "Регион/область страны.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "districtName": {
+          "description": "Название административной единицы, например: район, сельсовет.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "townName": {
+          "description": "Название населенного пункта, может заполняться согласно Единому реестру административ-нотерриториальных и территориальных единиц Республики Бела-русь с указанием типа населенного пункта (согласно справочнику N091) перед его названием через пробел.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "townLocationName": {
+          "description": "Конкретное наименование места в населенном пункте. Используется при необходимости для указания кода СОАТО в соответствии с ОКРБ 003 и согласно справочнику N058.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "postCode": {
+          "description": "Почтовый индекс.",
+          "$ref": "#/definitions/Max16Text"
+        },
+        "streetName": {
+          "description": "Наименование улицы, может заполняться согласно Реестру наименований улиц и дорог Национального кадастрового агентства с указанием типа эле-мента улично-дорожной сети (согласно спра-вочнику N098) перед его названием через пробел.",
+          "$ref": "#/definitions/Max70Text"
+        },
+        "buildingNumber": {
+          "description": "Номер дома.",
+          "$ref": "#/definitions/Max16Text"
+        },
+        "room": {
+          "description": "Номер квартиры, помещения или комнаты.",
+          "$ref": "#/definitions/Max16Text"
+        },
+        "addressLine": {
+          "description": "Информация, которая позволяет найти и идентифицирует конкретный адрес в соответствии с данными почтовых служб, в произвольном текстовом формате.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/definitions/Max70Text"
+          }
+        }
+      },
+      "required": [
+        "country",
+        "addressLine"
+      ],
+      "additionalProperties": false
+    },
+    "risk": {
+      "description": "Индикаторы риска для конкретного запроса API, предоставленного пользователем API второго типа.",
+      "type": "object",
+      "properties": {
+        "paymentContextCode": {
+          "description": "Код платежа (согласно справочнику N099 \"Код назначения платежа\", СПР 3.01-2022).",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "merchantCategoryCode": {
+          "description": "Код категории, связанный с типом услуг или товаров, которые продавец предоставляет для транзакции (согласно ISO 18245).",
+          "$ref": "#/definitions/Exact4NumericText"
+        },
+        "merchantCustomerIdentification": {
+          "description": "Уникальный идентификатор покупателя, который продавец присвоил клиенту.",
+          "$ref": "#/definitions/Max35Text"
+        },
+        "postalAddress": {
+          "description": "Информация, которая позволяет найти и идентифицирует конкретный адрес в формате, устанавливаемом почтовыми службами.",
+          "$ref": "#/definitions/postalAddress"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
