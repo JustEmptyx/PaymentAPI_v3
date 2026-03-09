@@ -474,6 +474,86 @@ body {
     color: #1976d2;
 }
 
+/* Nested Sub-Groups */
+.function-group-content {
+    display: none;
+    padding: 0;
+    background: #fafafa;
+}
+
+.function-group.active .function-group-content {
+    display: block;
+}
+
+.function-sub-group {
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.function-sub-group:last-child {
+    border-bottom: none;
+}
+
+.function-sub-group-header {
+    padding: 8px 15px;
+    background-color: #f0f2f5;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.2s;
+}
+
+.function-sub-group-header:hover {
+    background-color: #e8eaed;
+    color: #333;
+}
+
+.function-sub-group-header::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+
+.function-sub-group.active .function-sub-group-header::before {
+    transform: rotate(90deg);
+}
+
+.function-sub-group-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.function-sub-group.active .function-sub-group-list {
+    max-height: 500px;
+}
+
+.function-sub-group-list li {
+    padding: 6px 15px 6px 30px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 0.85em;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.function-sub-group-list li:last-child {
+    border-bottom: none;
+}
+
+.function-sub-group-list li:hover {
+    background-color: #eef4ff;
+    color: #1976d2;
+}
+
 /* Make the function list scrollable if it gets too long */
 #function-list {
     max-height: calc(100vh - 200px);
@@ -1029,4 +1109,161 @@ body {
 
 .validation-result .validation-error-item {
     margin-bottom: 4px;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: #f9fafb;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.modal-close {
+    font-size: 1.5rem;
+    color: var(--text-light);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--text-color);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-body p {
+    margin-bottom: 15px;
+    color: var(--text-color);
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Account List Styles */
+.account-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.account-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.account-item:hover {
+    background-color: #f9fafb;
+    border-color: var(--primary-color);
+}
+
+.account-item input[type="checkbox"] {
+    margin-right: 12px;
+    margin-top: 3px;
+    accent-color: var(--primary-color);
+    width: 18px;
+    height: 18px;
+}
+
+.account-details {
+    flex: 1;
+}
+
+.account-name {
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.account-info {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+.account-currency {
+    display: inline-block;
+    background-color: #eef2ff;
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.account-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.account-status.enabled {
+    background-color: #ecfdf5;
+    color: #059669;
+}
+
+.account-status.disabled {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.error-message {
+    color: var(--error-color);
+    background-color: #fef2f2;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    margin-top: 10px;
 }
