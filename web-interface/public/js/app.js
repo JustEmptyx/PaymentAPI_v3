@@ -202,7 +202,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    
+    function getSelectedSignType() {
+        const selected = document.querySelector('input[name="signType"]:checked');
+        return selected ? selected.value : 'OTP'; // По умолчанию OTP
+    }
+
+    // Add event listeners for signType radio buttons
+    function setupSignTypeEventListeners() {
+        const otpRadio = document.querySelector('input[name="signType"][value="OTP"]');
+        const edsRadio = document.querySelector('input[name="signType"][value="EDS"]');
+        
+        if (otpRadio && edsRadio) {
+            otpRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    edsRadio.checked = false;
+                    console.log('Sign type changed to: OTP');
+                }
+            });
+            
+            edsRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    otpRadio.checked = false;
+                    console.log('Sign type changed to: EDS');
+                }
+            });
+        }
+    }
+
+    // Setup Type of Sign radio buttons
+    function setupTypeOfSignRadios() {
+        const otpRadio = document.querySelector('input[name="signType"][value="OTP"]');
+        const edsRadio = document.querySelector('input[name="signType"][value="EDS"]');
+        
+        if (otpRadio && edsRadio) {
+            otpRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    edsRadio.checked = false;
+                    console.log('Sign type changed to: OTP');
+                }
+            });
+            
+            edsRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    otpRadio.checked = false;
+                    console.log('Sign type changed to: EDS');
+                }
+            });
+        }
+    }
+
     function renderFunctionList(functions) {
         functionList.innerHTML = '';
 
@@ -551,6 +599,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Setup debtorIdentification radio behavior (Sequence tab)
         setupDebtorIdentificationRadios('#sequence-headers-list');
+        
+        // Setup Type of Sign radio buttons
+        setupTypeOfSignRadios();
+        
+        // Setup signType event listeners
+        setupSignTypeEventListeners();
     }
 
     // Setup debtorIdentification checkboxes to behave like radio buttons
@@ -767,6 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const requestBody = sequenceEditor ? sequenceEditor.getValue() : '{}';
         const enabledHeaders = getSequenceHeaders();
         const apiKey = getSequenceApiKey();
+        const signType = getSelectedSignType(); // Добавить эту строку
 
         // Validation
         if (!paymentType) {
@@ -810,7 +865,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     steps,
                     requestBody,
                     enabledHeaders,
-                    apiKey
+                    apiKey,
+                    signType
                 }),
                 credentials: 'include'
             });
@@ -896,6 +952,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     status: acc.status
                 }))
             }, null, null, null);
+            
 
             // Continue sequence from paused step
             const response = await fetch('/api/executeSequence', {
@@ -910,7 +967,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     enabledHeaders: currentSequenceState.enabledHeaders,
                     apiKey: currentSequenceState.apiKey,
                     continueFromStep: currentSequenceState.pauseAtStep,
-                    selectedAccounts: selectedAccounts.map(acc => acc.accountDetails.identification)
+                    selectedAccounts: selectedAccounts.map(acc => acc.accountDetails.identification),
+                    signType: getSelectedSignType()
                 }),
                 credentials: 'include'
             });
@@ -1294,6 +1352,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentFunction && tabName !== 'functions') {
             saveFunctionContext(currentFunction);
         }
+
+        // Refresh CodeMirror editors after tab switch so they render correctly
+        // when transitioning from display:none to display:block
+        setTimeout(() => {
+            Object.values(editors).forEach(editor => {
+                if (editor && typeof editor.refresh === 'function') {
+                    editor.refresh();
+                }
+            });
+            if (sequenceEditor && typeof sequenceEditor.refresh === 'function') {
+                sequenceEditor.refresh();
+            }
+        }, 0);
     }
 
     
