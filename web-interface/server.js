@@ -639,7 +639,7 @@ app.post('/api/executeSequence', async (req, res) => {
         req.session.config = { ...PISPauth.defaultConfig};
     }
     
-    const { paymentType, steps, requestBody, enabledHeaders = [], apiKey, continueFromStep, selectedAccounts } = req.body;
+    const { paymentType, steps, requestBody, enabledHeaders = [], apiKey, continueFromStep, selectedAccounts, signType } = req.body;
     
     // Check if we're continuing from account selection
     const sessionId = req.sessionID;
@@ -704,6 +704,13 @@ app.post('/api/executeSequence', async (req, res) => {
             req.session.config.apikey = storedSequenceData.apiKey;
         }
         
+        // Set signType in config from request or stored data
+        if (signType) {
+            req.session.config.signType = signType;
+        } else if (storedSequenceData && storedSequenceData.signType) {
+            req.session.config.signType = storedSequenceData.signType;
+        }
+        
         // Build sequence of functions based on paymentType and steps
         const sequence = buildSequence(paymentType, steps);
         
@@ -747,6 +754,7 @@ app.post('/api/executeSequence', async (req, res) => {
                             requestBody: parsedBody,
                             enabledHeaders,
                             apiKey: apiKey || (storedSequenceData ? storedSequenceData.apiKey : null),
+                            signType: signType || (storedSequenceData ? storedSequenceData.signType : null),
                             sequenceIndex: i,
                             results: results,
                             accountsData: result.data,
@@ -755,7 +763,8 @@ app.post('/api/executeSequence', async (req, res) => {
                                 access_token: req.session.config.access_token,
                                 url_kc: req.session.config.url_kc,
                                 url_swagger: req.session.config.url_swagger,
-                                breadcrumbId: req.session.config.breadcrumbId
+                                breadcrumbId: req.session.config.breadcrumbId,
+                                signType: req.session.config.signType
                             }
                         };
                         
@@ -862,6 +871,11 @@ app.post('/api/executeSequence', async (req, res) => {
         const resultsToReturn = isContinuing && storedSequenceData 
             ? results.slice(storedSequenceData.results.length)
             : results;
+            
+        // Store signType in session config for continuation
+        if (signType) {
+            req.session.config.signType = signType;
+        }
         
         res.json({
             success: true,
@@ -1014,7 +1028,12 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             }
             
             // Call user-defined function to prepare special part body
-            const userResult = await PISPauth.prepareExternalRepresentationSpecialPartBody(config, baseBody);
+            let userResult;
+            if (config.signType === 'EDS') {
+                userResult = await PISPauth.prepareExternalRepresentationSpecialPartBodyEDS(config, baseBody);
+            } else {
+                userResult = await PISPauth.prepareExternalRepresentationSpecialPartBody(config, baseBody);
+            }
             return { success: true, data: userResult, statusCode: null };
         }
         
@@ -1187,7 +1206,6 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
         }
 
         if (funcName === 'prepareExternalRepresentationSpecialPartBodyAccounts') {
-            debugger
             // Get the result from step 5 (prepareExternalRepresentationBody)
             const prepBodyResult = results.find(r => r.name === 'prepareExternalRepresentationBodyAccounts');
             // Get the result from step 6 (put*ConsentExternalRepresentation)
@@ -1207,7 +1225,12 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             }
             
             // Call user-defined function to prepare special part body
-            const userResult = await PISPauth.prepareExternalRepresentationSpecialPartBody(config, baseBody);
+            let userResult
+            if (config.signType === 'EDS') {
+                userResult = await PISPauth.prepareExternalRepresentationSpecialPartBodyEDS(config, baseBody);
+            } else {
+                userResult = await PISPauth.prepareExternalRepresentationSpecialPartBody(config, baseBody);
+            }
             return { success: true, data: userResult, statusCode: null };
         }
 
@@ -1243,7 +1266,12 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             const body3 = (prepSpecialPartResult && prepSpecialPartResult.data) ? prepSpecialPartResult.data : {};
             const body4 = (putSpecialPartResult && putSpecialPartResult.data) ? putSpecialPartResult.data : {};
             
-            const userResult = await PISPauth.prepareAccountsAuthorisationBody(body1, body2, body3, body4, paymentType);
+            let userResult
+            if (config.signType === 'EDS') {
+                userResult = await PISPauth.prepareAccountsEDSAuthorisationBody(config, body1, body2, body3, body4, paymentType);
+            } else {
+                userResult = await PISPauth.prepareAccountsAuthorisationBody(body1, body2, body3, body4, paymentType);
+            }
             return { success: true, data: userResult, statusCode: null };
         }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment API Tester</title>
+    <title>MAPPaymentAPILab</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
     <link rel="stylesheet" href="css/styles.css">
@@ -12,10 +12,10 @@
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar">
-            <div class="logo">Payment API Tester</div>
+            <div class="logo">MAPPaymentAPILab</div>
             <div class="menu">
                 <div class="menu-section">
-                    <div class="menu-header">Navigation</div>
+                    <div class="menu-header"></div>
                     <div class="menu-item active" data-tab="functions">
                         <i class="icon">📋</i> Functions
                     </div>
@@ -205,7 +205,22 @@
                             </label>
                         </div>
                     </div>
-
+                    <!-- Type of Sign -->
+                    <div class="sequence-section">
+                        <h3>Type of Sign</h3>
+                        <div class="radio-group" id="sign-type-group">
+                            <label class="radio-container">
+                                <input type="radio" name="signType" value="OTP" checked>
+                                <span class="radio-mark"></span>
+                                OTP
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="signType" value="EDS">
+                                <span class="radio-mark"></span>
+                                EDS
+                            </label>
+                        </div>
+                    </div>
                     <!-- Steps Selection -->
                     <div class="sequence-section">
                         <h3>Steps</h3>
@@ -362,7 +377,10 @@
                     
                     <!-- ReadME Sub-tabs -->
                     <div class="readme-subtabs">
-                        <div class="readme-subtab-btn active" data-subtab="readme-functions">
+                        <div class="readme-subtab-btn active" data-subtab="readme-start">
+                            Начало работы
+                        </div>
+                        <div class="readme-subtab-btn" data-subtab="readme-functions">
                             Functions
                         </div>
                         <div class="readme-subtab-btn" data-subtab="readme-sequence">
@@ -386,7 +404,7 @@
                             
                             <p>При переходе на вкладку Functions в модуле Navigator появляется возможность выбора функций в списке Available Functions.</p>
                             
-                            <p>Модуль Available Functions разделен на 9 зон: "Токены", "Общие функции", "Domestic", "Domestic Tax", "List Accounts", "List Passports", "Requirements", "Requirements Tax", "VRP".</p>
+                            <p>Модуль Available Functions разделен на 6 зон: "Токены", "Общие функции", "Intents", "Consents", "Payments", "Accounts"</p>
                             
                             <div class="readme-image-container">
                                 <img src="images/functions/func2.png" alt="Available Functions Zones" class="readme-image" onerror="this.style.display='none'">
@@ -454,7 +472,7 @@
                             <p>Модуль разделен на 5 зон:</p>
                             
                             <ol class="readme-list">
-                                <li><strong>Зона типа платежа</strong> — в данной зоне находится 7 радиокнопок, которые представляют 7 типов платежей. При проведении "цепочки запросов" может быть выбран только 1 тип платежа.</li>
+                                <li><strong>Зона типа платежа</strong> — в данной зоне находится 8 радиокнопок, которые представляют 7 типов платежей и согласия на счета. При проведении "цепочки запросов" может быть выбран только 1 тип платежа.</li>
                                 <li><strong>Зона выбора шагов</strong> — в данной зоне присутствует вариант выбора этапов, необходимых для проведения платежа:
                                     <ul class="readme-list">
                                         <li><code>createConsent</code> — этап, отвечающий за создание согласия;</li>
@@ -473,6 +491,7 @@
                                         <li><code>x-api-key</code> — получает значение из конфига. Если находится в активном состоянии — забирает значение <code>apikey</code> из конфига, если в неактивном, то забирает значение <code>access_token</code>;</li>
                                         <li><code>privateIdentification</code> и <code>organisationIdentification</code> — необходимы для идентификации типа бенефициара в том случае, если отсутствует атрибут <code>data.initiation.debtor</code>.</li>
                                     </ul>
+                                    <p class="readme-note"><strong>Внимание!</strong> Хидеры privateIdentification и organisationIdentification могут быть переданы только для согласий на проведение платежа</p>
                                     <p class="readme-note"><strong>Внимание!</strong> При выполнении "цепочек запросов" необходимо выбирать заголовки, нужные для работы методов "создания согласия", также необходимо использовать заголовок <code>Content-type: application/json</code>.</p>
                                 </li>
                                 <li><strong>Зона тела ответа</strong> — в данной зоне находятся тела запросов/ответов для методов, выполнение которых необходимо при выполнении "цепочки запросов", и статусы выполнения каждого отдельного метода.</li>
@@ -491,7 +510,169 @@
                                 <img src="images/configuration/conf1.png" alt="Configuration Module" class="readme-image" onerror="this.style.display='none'">
                             </div>
                             
-                            <p class="readme-note">Описание и способы получения значений для конфига будут описаны позже.</p>
+                            <h4>alg</h4>
+                            <p>Идентификатор криптографического алгоритма ЭЦП, используемого для защиты JWS. Значение RS256 можно использовать в рамках данного экземпляра онлайн-спецификации исключительно в тестовом режиме, для соответствия требованиям СПР 6.02-2-2022 должны быть использованы значения BIGNS128 или BIGNS192 или BIGNS256 согласно "Вариантам алгоритмов выработки и проверки ЭЦП".</p>
+                            
+                            <h4>typ</h4>
+                            <p>Тип сериализации: JOSE - компактная сериализация.</p>
+                            
+                            <h4>baseUrl</h4>
+                            <p>префикс имён критичных частных</p>
+                            
+                            <p>Подробнее с информацией можно ознакомиться на сваггере: <code>{url_swagger}/#XJWSignatureSigningPH</code></p>
+                            
+                            <h4>url_kc</h4>
+                            <p>URI сервера авторизации Keycloak</p>
+                            
+                            <h4>url_swagger</h4>
+                            <p>URI сервера, который будет принимать запросы для вызова методов ПА</p>
+                            
+                            <h4>client_id_pisp, client_secret_pisp, client_id_qpisp, client_secret_qpisp, client_id_tpe, client_secret_tpe, client_id_dbo, client_secret_dbo</h4>
+                            <p>Логин и сикрет клиента для соответствующего потока авторизации. Разберем на примере client_id_dbo и client_secret_dbo. Данные логин и сикрет нужны для авторизации по потоку OBclientCredentials. Пусть у нас имеется взаимодействие с ДБО ЮЛ DigitalChannels. Тогда в кейклоке будет создан и настроен клиент digitalChannels</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/configuration/conf2.png" alt="Client Configuration" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <p>В таком случае в проперть client_id_dbo указывается "digitalChannels", а в client_secret_dbo указывается сикрет из кейклока для данного клиента "rvDMLEf5Njz6L5BGpst4dLP1hMrBWxEV"</p>
+                            
+                            <p>Подробнее ознакомиться с потоками авторизации можно по ссылке <code>{url_swagger}#section/Authentication</code></p>
+                            
+                            <h4>apikey</h4>
+                            <p>уникальный идентификатор, предоставляющий доступ к SC-MAP Пользователем API первого типа. Пользователь API первого типа, может получить Apikey, использование которого аутентифицирует и авторизует Пользователя API первого типа в системе. Apikey выдается через SC-MAP, являющийся в данном процессе Сервером авторизации Поставщика API. После создания и авторизациии долгосрочного согласия в системе SC-MAP Пользователю API первого типа выдается Apikey, который используется далее для идентификации и авторизации запросов Пользователя API первого типа указанием в запросах HTTP-заголовка x-api-key вместо HTTP-заголовка Authorization.</p>
+                            
+                            <h4>client_otp</h4>
+                            <p>OTP клиента, который будет использоваться при формировании имитовставки для спец. части согласия при его авторизации.</p>
+                            
+                            <h4>mobile_number</h4>
+                            <p>номер мобильного телефона клиента, который будет использоваться при формировании имитовставки для спец. части согласия при его авторизации</p>
+                            
+                            <h4>subjectKeyIdentifier</h4>
+                            <p>Идентификатор ключа субъекта СДБО</p>
+                            
+                            <h4>password</h4>
+                            <p>Пароль к контейнеру ключа субъекта СДБО</p>
+                            
+                            <h4>EDSsignatureSubjectKeyIdentifier</h4>
+                            <p>Идентификатор ключа субъекта.</p>
+                            
+                            <h4>EDSsignaturepassword</h4>
+                            <p>Пароль к контейнеру ключа субъекта.</p>
+                            
+                            <p class="readme-note"><strong>Внимание!</strong> Проперти EDSsignatureSubjectKeyIdentifier и EDSsignaturepassword используются только в случае авторизации согласия с ЭЦП. Подробнее можно ознакомиться на сваггере <code>{url_swagger}#EDSspecialPart</code></p>
+                        </div>
+                    </div>
+
+                    <!-- ReadME Start Content -->
+                    <div id="readme-start" class="readme-subtab-content">
+                        <div class="readme-content">
+                            <h3>Начало работы</h3>
+                            
+                            <p>Для начала работы с Платежными API необходимо создать федерацию ДБО в Keycloak.</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs1.png" alt="Keycloak Federation Setup 1" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs2.png" alt="Keycloak Federation Setup 2" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <h4>Обязательные поля:</h4>
+                            <ul class="readme-list">
+                                <li><strong>Apikey</strong> и <strong>FederationURI</strong> предоставляет СДБО.</li>
+                                <li><strong>accept</strong> - значение по умолчанию "application/json;charset=utf-8"</li>
+                                <li><strong>accept-language</strong> - значение по умолчанию "ru"</li>
+                                <li><strong>Batch Size</strong> - значение по умолчанию "1000"</li>
+                                <li><strong>Timeout For Connecting to the Service</strong> - значение по умолчанию "5000"</li>
+                                <li><strong>Timeout for Callig Service Methods</strong> - значение по умолчанию "5000"</li>
+                            </ul>
+                            
+                            <p>При нажатии на Save - должно появиться "зеленое" сообщение "Success! The provider has been updated."</p>
+                            
+                            <p class="readme-note"><strong>Внимание!</strong> Если вместо "зеленого сообщения" получаем "красное" сообщение - можно проверить вызов методов ДБО "руками" с нод карафов <code>curl -kiv -X GET -H "Content-type: application/json;charset=utf-8" -H "x-api-key: {apikey}" {dbo_host}:{dbo_port}/ibservices/OB/digitalChannels/users</code> - Данный пример для ДБО digitalChannels</p>
+                            
+                            <h4>Создание клиента федерации</h4>
+                            <p>Далее необходимо создать клиента соответствуещего федераци. В нашем случае клиента "digitalChannels"</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs3.png" alt="Client Configuration 1" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs4.png" alt="Client Configuration 2" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <h4>Настройка Client Scopes</h4>
+                            <p>Во вкладке Client Scopes необходимо:</p>
+                            <ul class="readme-list">
+                                <li>добавить скоуп "roles" в Assigned Default Client Scopes</li>
+                                <li>добавить скоупы "online-banking" и "SC-APPS" в Assigned Default Client Scopes</li>
+                            </ul>
+                            
+                            <h4>Настройка мапперов</h4>
+                            <p>Необходимо добавить следующие мапперы:</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs5.png" alt="Mapper Configuration 1" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs6.png" alt="Mapper Configuration 2" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs7.png" alt="Mapper Configuration 3" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs8.png" alt="Mapper Configuration 4" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs9.png" alt="Mapper Configuration 5" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs10.png" alt="Mapper Configuration 6" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs11.png" alt="Mapper Configuration 7" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs12.png" alt="Mapper Configuration 8" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs13.png" alt="Mapper Configuration 9" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs14.png" alt="Mapper Configuration 10" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs15.png" alt="Mapper Configuration 11" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs16.png" alt="Mapper Configuration 12" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs17.png" alt="Mapper Configuration 13" class="readme-image" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <p>В Claim value мапперов onlineBankingURI, apiKey, acceptLanguage, accept необходимо вставить информацию идентичную настройке федерации.</p>
+                            
+                            <h4>Атрибуты сервисного пользователя ДБО</h4>
+                            <p>В атрибута сервисного пользователя ДБО необходимо создать и заполнить следующие атрибуты:</p>
+                            
+                            <div class="readme-image-container">
+                                <img src="images/gettingstarted/gs18.png" alt="Service User Attributes" class="readme-image" onerror="this.style.display='none'">
+                            </div>
                         </div>
                     </div>
                 </div>

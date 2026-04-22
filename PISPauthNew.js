@@ -35,7 +35,9 @@ let defaultConfig = {
     mobile_number: "+375-255427989",
     access_token: "",
     subjectKeyIdentifier: "8627DBC521A8F18A4CDDD8D396949CC333ED762E",
-    password: "12345678"
+    password: "12345678",
+    EDSsignatureSubjectKeyIdentifier:"8627DBC521A8F18A4CDDD8D396949CC333ED762E",
+    EDSsignaturepassword:"12345678"
 };
 
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
@@ -747,6 +749,7 @@ function renameKeyInObject(obj, oldKey, newKey) {
 //   }
 // }
 
+
 async function createSpecialPartObject(config,imitIns,requestBodyWithExternalRepresentation){
   // Получаем creationDateTime из requestBodyWithExternalRepresentation
   const creationDateTimeStr = requestBodyWithExternalRepresentation.data.creationDateTime;
@@ -781,6 +784,74 @@ async function createSpecialPartObject(config,imitIns,requestBodyWithExternalRep
       }
   }
 }
+async function generateClientSignatures(config,requestBodyWithExternalRepresentation){
+    const creationDateTimeStr = requestBodyWithExternalRepresentation.data.creationDateTime;
+    const creationDate = new Date(creationDateTimeStr);
+    const dateTimePlus1Sec = addSeconds(creationDate, 1);
+    const formatStr = "yyyy-MM-dd'T'HH:mm:ssXXX";
+    let signatureDateTime = formatInTimeZone(dateTimePlus1Sec, 'Europe/Minsk', formatStr);
+    let clientSignature = [
+        {
+            "EDSattributes": [ ],
+            "cryptoType": 1,
+            "includePreviousSignatures": false,
+            "signature": "",
+            "signatureDateTime": signatureDateTime,
+            "signatureNumber": 1,
+            "subjectKeyIdentifier": config.EDSsignatureSubjectKeyIdentifier
+        }
+    ]
+    return clientSignature
+}
+
+async function createSpecialPartObjectEDS(config,clientSignatures,requestBodyWithExternalRepresentation){
+  // Получаем creationDateTime из requestBodyWithExternalRepresentation
+  const creationDateTimeStr = requestBodyWithExternalRepresentation.data.creationDateTime;
+  
+  const creationDate = new Date(creationDateTimeStr);
+  const dateTimePlus1Sec = addSeconds(creationDate, 1);
+  const dateTimePlus2Sec = addSeconds(creationDate, 2);
+  const formatStr = "yyyy-MM-dd'T'HH:mm:ssXXX";
+  
+  const otpDateTime = formatInTimeZone(dateTimePlus1Sec, 'Europe/Minsk', formatStr);
+  const signatureDateTime = formatInTimeZone(dateTimePlus2Sec, 'Europe/Minsk', formatStr);
+  const statusUpdateDateTime = formatInTimeZone(dateTimePlus1Sec, 'Europe/Minsk', formatStr);
+  let commonPartWithEDSattributes = {
+    "data": requestBodyWithExternalRepresentation.data,
+    "specialPart": {
+      "clientSignatures": clientSignatures,
+    }
+  };
+  console.log(JSON.stringify(commonPartWithEDSattributes))
+  await appendToDefinedFile("logs.txt","commonPartWithEDSattributes",JSON.stringify(commonPartWithEDSattributes))
+  let signBody = {
+        "Auth":{
+            "CryptoType":1,
+            "KeyID":config.EDSsignatureSubjectKeyIdentifier,
+            "Password":config.EDSsignaturepassword || "12345678"
+        },
+        "DataB64": convertToBase64(JSON.stringify(commonPartWithEDSattributes)),
+        "OptAddAllCert":false,
+        "OptAddCert":true,
+        "OptCheckPrivateKey":true,
+        "OptReturnSignCert":true
+  }
+  let hash = await scCryptoSign(config,signBody)
+  commonPartWithEDSattributes.specialPart.clientSignatures[0].signature = hash.ResultB64
+  console.log(JSON.stringify(commonPartWithEDSattributes))
+  await appendToDefinedFile("logs.txt","commonPartWithEDSattributes",JSON.stringify(commonPartWithEDSattributes))
+  return {
+    "specialPart":
+      {
+        "clientSignatures":commonPartWithEDSattributes.specialPart.clientSignatures,
+        "signatureDateTime": signatureDateTime,
+        "status": "Authorised",
+        "statusUpdateDateTime": signatureDateTime,
+        "subjectKeyIdentifier": config.subjectKeyIdentifier,
+        "verifiedSignatures":[],
+      }
+  }
+}
 
 async function createMACkey(config){
   let hashedOTP
@@ -810,11 +881,14 @@ async function createImitationInsert(config,requestBodyWithExternalRepresentatio
   let buff = new Buffer(JSON.stringify(requestBodyWithExternalRepresentation));
   let extendedBodyHash = buff.toString('base64');
 
+  await appendToDefinedFile("logs.txt","requestBodyWithExternalRepresentation_base64_step1ImitIns",extendedBodyHash)
   console.log(config.MAC_KEY)
-  console.log(extendedBodyHash)
+  console.log("requestBodyWithExternalRepresentation_base64_step1ImitIns:" + extendedBodyHash)
   await createMACkey(config).then((data)=>{config.MAC_KEY = data.ResultB64})
 
   console.log("generated MAC_KEY" + config.MAC_KEY)
+  await appendToDefinedFile("logs.txt","generated MAC_KEY_step2ImitIns",config.MAC_KEY)
+  await console.log("generated MAC_KEY_step2ImitIns"+ config.MAC_KEY)
   console.log("extendedbodyhash\n" + extendedBodyHash)
   let data = {
       "Auth": {
@@ -826,6 +900,7 @@ async function createImitationInsert(config,requestBodyWithExternalRepresentatio
     }
 
   console.log(JSON.stringify(data))
+    await appendToDefinedFile("logs.txt","SCCrypto_ra_hash_step3ImitIns",JSON.stringify(data))
   //
   const response = await fetch(config.url_swagger+"SCCrypto/ra/hash", {
     method: "POST",
@@ -835,6 +910,7 @@ async function createImitationInsert(config,requestBodyWithExternalRepresentatio
     },
     body: JSON.stringify(data)
   });
+
   return response.json();
 }
 
@@ -1458,11 +1534,24 @@ async function prepareExternalRepresentationBodyAccounts(body,type){
 }
 
 async function prepareExternalRepresentationSpecialPartBody(config,requestBodyWithExternalRepresentation){
+    if(requestBodyWithExternalRepresentation.data.paymentConsentId){
+        requestBodyWithExternalRepresentation = renameKeyInObject(requestBodyWithExternalRepresentation,"paymentConsentId","domesticConsentId")
+    }
     requestBodyWithExternalRepresentation = sortObjectAlphabetically(requestBodyWithExternalRepresentation)
     debugger;
     let imitIns = await createImitationInsert(config,requestBodyWithExternalRepresentation)
+      await appendToDefinedFile("logs.txt","imitIns_step4ImitIns",imitIns)
     console.log("ImitIns\n" + imitIns) 
     let specPartObject = await createSpecialPartObject(config,imitIns.ResultB64,requestBodyWithExternalRepresentation)
+    console.log("!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!\n")
+    return specPartObject
+}
+
+async function prepareExternalRepresentationSpecialPartBodyEDS(config,requestBodyWithExternalRepresentation){
+    requestBodyWithExternalRepresentation = sortObjectAlphabetically(requestBodyWithExternalRepresentation)
+    debugger;
+    let clientSignatures = await generateClientSignatures(config,requestBodyWithExternalRepresentation)
+    let specPartObject = await createSpecialPartObjectEDS(config,clientSignatures,requestBodyWithExternalRepresentation)
     return specPartObject
 }
 
@@ -1556,6 +1645,36 @@ async function prepareAccountsAuthorisationBody(preparedAccList,extRepr,specPart
     return authorisationBody
 }
 
+async function prepareAccountsEDSAuthorisationBody(config, preparedAccList,extRepr,specPart,extReprSpecPart,type){
+    const creationDateTimeStr = preparedAccList.data.creationDateTime;
+    const creationDate = new Date(creationDateTimeStr);
+    const dateTimePlus1Sec = addSeconds(creationDate, 1);
+    const formatStr = "yyyy-MM-dd'T'HH:mm:ssXXX";
+    let signatureDateTime = formatInTimeZone(dateTimePlus1Sec, 'Europe/Minsk', formatStr);
+    const statusUpdateDateTime = formatInTimeZone(dateTimePlus1Sec, 'Europe/Minsk', formatStr);
+
+    console.log("extRepr_fromprep\n"+JSON.stringify(extRepr))
+    console.log("specPart_fromprep\n"+JSON.stringify(specPart))
+    console.log("extReprSpecPart\n"+JSON.stringify(extReprSpecPart))
+    console.log("preparedAccList\n" + JSON.stringify(preparedAccList))
+    let authorisationBody = preparedAccList
+    console.log("authorisationBody\n"+JSON.stringify(authorisationBody))
+    authorisationBody.data.externalRepresentation = extRepr.data.externalRepresentation
+    console.log("authorisationBodyWithExtRepr\n"+JSON.stringify(authorisationBody))
+    authorisationBody.specialPart =  {
+          "clientSignatures":specPart.specialPart.clientSignatures,
+          "externalRepresentationSpecialPart":extReprSpecPart.data.externalRepresentationSpecialPart,
+          "signatureDateTime": signatureDateTime,
+          "status": "Authorised",
+          "statusUpdateDateTime": statusUpdateDateTime,
+          "subjectKeyIdentifier": config.subjectKeyIdentifier
+        }
+    console.log("authorisationBodyWithSpecPartExtRepr\n"+JSON.stringify(authorisationBody))
+    
+    authorisationBody = sortObjectAlphabetically(authorisationBody)
+    return authorisationBody
+}
+
 module.exports = {defaultConfig,
     createTokenQPISP,createTokenTPE,createTokenPISP,createDboClientToken,
     postPaymentIntent,putPaymentIntent,
@@ -1568,7 +1687,7 @@ module.exports = {defaultConfig,
     postTaxRequirementConsent,patchTaxRequirementConsent,postTaxRequirementPayment,putTaxRequirementConsentExternalRepresentation,
     postVRPConsent,patchVRPConsent,postVRPPayment,putVRPConsentExternalRepresentation,
     postAccountIntent,putAccountIntent,prepareExternalRepresentationBodyAccounts,
-    postAccountConsents, patchAccountConsents,prepareAccountsAuthorisationBody,
+    postAccountConsents, patchAccountConsents,prepareAccountsAuthorisationBody,prepareExternalRepresentationSpecialPartBodyEDS,prepareAccountsEDSAuthorisationBody,
     postStatements, postTransactions,
     makePOSTrequest,
 prepareExternalRepresentationBody,prepareExternalRepresentationSpecialPartBody,putConsentSpecialPartExternalRepresentation,putAccountConsentsSpecialPartExternalRepresentation,putAccountConsentsExternalRepresentation,prepareAuthorisationBody,preparePaymentsBody,
