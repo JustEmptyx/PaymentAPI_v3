@@ -2,3 +2,5 @@
 node_modules
 web-interface/node_modules
 logs.txt
+web-interface/logs.txt
+*.tar
