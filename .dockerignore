@@ -7,3 +7,4 @@ npm-debug.log
 logs.txt
 web-interface/node_modules
 web-interface/logs.txt
+*.tar
