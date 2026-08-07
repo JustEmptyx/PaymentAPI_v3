@@ -1279,3 +1279,146 @@ body {
     border: 1px solid #fecaca;
     margin-top: 10px;
 }
+
+/* ===== Utils Tab Styles ===== */
+.utils-container {
+    padding: 20px;
+}
+
+.utils-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.utils-btn-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.utils-btn {
+    position: relative;
+}
+
+/* Tooltip */
+.utils-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.95);
+    background-color: #1f2937;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.utils-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1f2937 transparent transparent transparent;
+}
+
+.utils-btn-wrapper:hover .utils-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) scale(1);
+}
+
+.utils-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 600px;
+}
+
+.utils-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.form-input {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-select {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    background-color: #fff;
+    transition: border-color 0.2s;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.utils-result {
+    margin-top: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.utils-result .section-header {
+    background: #f9fafb;
+    padding: 10px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.utils-result-content {
+    padding: 16px;
+    margin: 0;
+    background: #fff;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-color);
+    max-height: 400px;
+    overflow-y: auto;
+}

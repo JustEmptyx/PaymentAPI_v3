@@ -352,8 +352,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     const formattedResult = typeof context.lastResult === 'string'
                         ? context.lastResult
                         : JSON.stringify(context.lastResult, null, 2);
+                    
+                    if (typeof context.lastResult === 'string') {
+                        const trimmed = context.lastResult.trim();
+                        if (trimmed.startsWith('<?xml') || trimmed.startsWith('<')) {
+                            editors.response.setOption('mode', 'xml');
+                        } else {
+                            try {
+                                JSON.parse(context.lastResult);
+                                editors.response.setOption('mode', 'application/json');
+                            } catch (e) {
+                                editors.response.setOption('mode', 'text');
+                            }
+                        }
+                    } else {
+                        editors.response.setOption('mode', 'application/json');
+                    }
+                    
                     editors.response.setValue(formattedResult);
                 } catch (e) {
+                    editors.response.setOption('mode', 'text');
                     editors.response.setValue('Error formatting response');
                 }
             } else {
@@ -515,24 +533,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof result.data === 'string') {
             
             if (result.data.trim().startsWith('<?xml') || result.data.trim().startsWith('<')) {
-                
+                editors.response.setOption('mode', 'xml');
                 const formattedXml = formatXml(result.data);
                 responseDisplay += formattedXml;
             } else {
                 
                 try {
                     const json = JSON.parse(result.data);
+                    editors.response.setOption('mode', 'application/json');
                     responseDisplay += JSON.stringify(json, null, 2);
                 } catch (e) {
-                    
+                    editors.response.setOption('mode', 'text');
                     responseDisplay += result.data;
                 }
             }
         } else if (typeof result.data === 'object') {
-            
+            editors.response.setOption('mode', 'application/json');
             responseDisplay += JSON.stringify(result.data, null, 2);
         } else {
-            
+            editors.response.setOption('mode', 'text');
             responseDisplay += String(result.data);
         }
         
@@ -1388,11 +1407,197 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     
+    // ==================== UTILS FUNCTIONS ====================
+
+    function initUtils() {
+        const generateAispBtn = document.getElementById('utils-generate-aisp');
+        const aispPanel = document.getElementById('aisp-panel');
+        const aispGenerateBtn = document.getElementById('aisp-generate-btn');
+
+        const generatePispBtn = document.getElementById('utils-generate-pisp');
+        const pispPanel = document.getElementById('pisp-panel');
+        const pispGenerateBtn = document.getElementById('pisp-generate-btn');
+
+        // Helper to show only one utils panel at a time
+        function switchUtilsPanel(targetPanel) {
+            const allPanels = document.querySelectorAll('.utils-panel');
+            allPanels.forEach(panel => {
+                if (panel === targetPanel) {
+                    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+                } else {
+                    panel.style.display = 'none';
+                }
+            });
+        }
+
+        // Toggle AISP panel
+        if (generateAispBtn && aispPanel) {
+            generateAispBtn.addEventListener('click', () => {
+                switchUtilsPanel(aispPanel);
+            });
+        }
+
+        // Generate AISP
+        if (aispGenerateBtn) {
+            aispGenerateBtn.addEventListener('click', async () => {
+                const clientId = document.getElementById('aisp-client-id').value.trim();
+                const clientSecret = document.getElementById('aisp-client-secret').value.trim();
+                const consentId = document.getElementById('aisp-consent-id').value.trim();
+                const resultContainer = document.getElementById('aisp-result-container');
+                const resultPre = document.getElementById('aisp-result');
+
+                if (!clientId || !clientSecret || !consentId) {
+                    showNotification('Please fill in client_id, client_secret and consent_id', 'error');
+                    return;
+                }
+
+                try {
+                    aispGenerateBtn.disabled = true;
+                    aispGenerateBtn.textContent = 'Generating...';
+
+                    const response = await fetch('/api/utils/generateAISP', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, consent_id: consentId }),
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        resultPre.textContent = result.data;
+                        resultContainer.style.display = 'block';
+                        showNotification('AISP request generated successfully');
+                    } else {
+                        showNotification(result.error || 'Generation failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error generating AISP request:', error);
+                    showNotification(`Error: ${error.message}`, 'error');
+                } finally {
+                    aispGenerateBtn.disabled = false;
+                    aispGenerateBtn.textContent = 'Сгенерировать';
+                }
+            });
+        }
+
+        // Toggle PISP panel
+        if (generatePispBtn && pispPanel) {
+            generatePispBtn.addEventListener('click', () => {
+                switchUtilsPanel(pispPanel);
+            });
+        }
+
+        // Generate PISP
+        if (pispGenerateBtn) {
+            pispGenerateBtn.addEventListener('click', async () => {
+                const clientId = document.getElementById('pisp-client-id').value.trim();
+                const clientSecret = document.getElementById('pisp-client-secret').value.trim();
+                const consentId = document.getElementById('pisp-consent-id').value.trim();
+                const resultContainer = document.getElementById('pisp-result-container');
+                const resultPre = document.getElementById('pisp-result');
+
+                if (!clientId || !clientSecret || !consentId) {
+                    showNotification('Please fill in client_id, client_secret and consent_id', 'error');
+                    return;
+                }
+
+                try {
+                    pispGenerateBtn.disabled = true;
+                    pispGenerateBtn.textContent = 'Generating...';
+
+                    const response = await fetch('/api/utils/generatePISP', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, consent_id: consentId }),
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        resultPre.textContent = result.data;
+                        resultContainer.style.display = 'block';
+                        showNotification('PISP request generated successfully');
+                    } else {
+                        showNotification(result.error || 'Generation failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error generating PISP request:', error);
+                    showNotification(`Error: ${error.message}`, 'error');
+                } finally {
+                    pispGenerateBtn.disabled = false;
+                    pispGenerateBtn.textContent = 'Сгенерировать';
+                }
+            });
+        }
+
+        // Base64 Converter
+        const base64ConverterBtn = document.getElementById('utils-base64-converter');
+        const base64Panel = document.getElementById('base64-panel');
+        const base64ConvertBtn = document.getElementById('base64-convert-btn');
+
+        if (base64ConverterBtn && base64Panel) {
+            base64ConverterBtn.addEventListener('click', () => {
+                switchUtilsPanel(base64Panel);
+            });
+        }
+
+        if (base64ConvertBtn) {
+            base64ConvertBtn.addEventListener('click', async () => {
+                const operation = document.getElementById('base64-operation').value;
+                const value = document.getElementById('base64-input').value;
+                const resultContainer = document.getElementById('base64-result-container');
+                const resultPre = document.getElementById('base64-result');
+
+                if (!value) {
+                    showNotification('Please enter input value', 'error');
+                    return;
+                }
+
+                try {
+                    base64ConvertBtn.disabled = true;
+                    base64ConvertBtn.textContent = 'Converting...';
+
+                    const response = await fetch('/api/utils/base64', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ operation, value }),
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        resultPre.textContent = result.data;
+                        resultContainer.style.display = 'block';
+                        showNotification('Conversion completed successfully');
+                    } else {
+                        showNotification(result.error || 'Conversion failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error converting base64:', error);
+                    showNotification(`Error: ${error.message}`, 'error');
+                } finally {
+                    base64ConvertBtn.disabled = false;
+                    base64ConvertBtn.textContent = 'Convert';
+                }
+            });
+        }
+    }
+
     function init() {
         initEditors();
         loadFunctions();
         loadConfig();
         setupCascadeCheckboxes();
+        initUtils();
 
         
         executeBtn.addEventListener('click', executeFunction);
