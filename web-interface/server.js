@@ -9,6 +9,7 @@ const fs = require('fs');
 
 const PISPauth = require('../PISPauthNew');
 const defaultBodies = require('../defaultBodies');
+const base64Converter = require('../base64converter');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1685,6 +1686,93 @@ app.get('/api/sequence/status', (req, res) => {
         waitingForAccountSelection: true,
         paymentType: pendingSequences[sessionId].paymentType
     });
+});
+
+app.post('/api/utils/generateAISP', async (req, res) => {
+    try {
+        if (!req.session.config) {
+            req.session.config = { ...PISPauth.defaultConfig };
+        }
+        const { client_id, client_secret, consent_id } = req.body;
+        if (!client_id || !client_secret || !consent_id) {
+            return res.status(400).json({
+                success: false,
+                error: 'client_id, client_secret and consent_id are required'
+            });
+        }
+        const result = await PISPauth.generateAISPrequestObject(req.session.config, client_id, client_secret, consent_id);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error('Error generating AISP request:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Unknown error occurred'
+        });
+    }
+});
+
+app.post('/api/utils/generatePISP', async (req, res) => {
+    try {
+        if (!req.session.config) {
+            req.session.config = { ...PISPauth.defaultConfig };
+        }
+        const { client_id, client_secret, consent_id } = req.body;
+        if (!client_id || !client_secret || !consent_id) {
+            return res.status(400).json({
+                success: false,
+                error: 'client_id, client_secret and consent_id are required'
+            });
+        }
+        const result = await PISPauth.generatePISPrequestObject(req.session.config, client_id, client_secret, consent_id);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error('Error generating PISP request:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Unknown error occurred'
+        });
+    }
+});
+
+app.post('/api/utils/base64', (req, res) => {
+    try {
+        const { operation, value } = req.body;
+        if (!operation || value === undefined || value === null) {
+            return res.status(400).json({
+                success: false,
+                error: 'operation and value are required'
+            });
+        }
+
+        let result;
+        switch (operation) {
+            case 'toBase64':
+                result = base64Converter.convertToBase64(value);
+                break;
+            case 'toBase64Url':
+                result = base64Converter.convertToBase64URL(value);
+                break;
+            case 'base64ToBase64Url':
+                result = base64Converter.convertBase64ToBase64Url(value);
+                break;
+            case 'base64UrlToBase64':
+                result = base64Converter.convertBase64UrlToBase64(value);
+                break;
+            default:
+                return res.status(400).json({
+                    success: false,
+                    error: 'Unknown operation. Allowed: toBase64, toBase64Url, base64ToBase64Url, base64UrlToBase64'
+                });
+        }
+
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error('Error in base64 conversion:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Unknown error occurred'
+        });
+    }
 });
 
 app.get('*', (req, res) => {
