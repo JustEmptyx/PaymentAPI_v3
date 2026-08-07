@@ -2,7 +2,7 @@ const {convertBase64ToBase64Url,convertToBase64URL,convertToBase64} = require('.
 const {createFile,appendToDefinedFile} = require('./fileManager')
 const {scCryptoHash,scCryptoSign} = require('./cryptoManager')
 const { UnixDate,unixDate } = require('./dateModule');
-const {sortObjectAlphabetically,getRequestBody, findAttribute} = require('./utils')
+const {sortObjectAlphabetically,getRequestBody, findAttribute, serializeRequestBody} = require('./utils')
 
 
 async function generateSignature(config,methodType,methodUri,commonHeaders,projectName,requestBodyName,additionalInfo = {}){
@@ -151,7 +151,7 @@ async function generatePayload(config,methodType,methodUrl,commonHeaders,project
             "Auth": {
                 "CryptoType": 1,
             },
-            "DataB64": convertToBase64(JSON.stringify(requestBody))
+            "DataB64": convertToBase64(serializeRequestBody(requestBody))
         }
     }
     let hash = await scCryptoHash(config,cryptoHashBody)
