@@ -1,6 +1,43 @@
 const {requestBody} = require("./requestBodies");
 
+function canonicalizeXml(xml) {
+    if (!xml || typeof xml !== 'string') return xml;
+
+    // Step 1: Sort attributes in each tag / XML declaration
+    xml = xml.replace(/<([a-zA-Z_?][\w:.-]*)(\s+[^>]*)?(\/?>)/g, (match, tagName, attrString, closer) => {
+        if (!attrString || attrString.trim() === '') {
+            return `<${tagName}${closer}`;
+        }
+        const attrs = [];
+        const attrRegex = /([a-zA-Z_:][\w:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+        let m;
+        while ((m = attrRegex.exec(attrString)) !== null) {
+            const name = m[1];
+            const value = m[2] !== undefined ? m[2] : m[3];
+            attrs.push({ name, value });
+        }
+        if (attrs.length === 0) {
+            return `<${tagName}${closer}`;
+        }
+        attrs.sort((a, b) => a.name.localeCompare(b.name));
+        const sortedAttrs = attrs.map(a => `${a.name}="${a.value}"`).join(' ');
+        return `<${tagName} ${sortedAttrs}${closer}`;
+    });
+
+    // Step 2: Minify — remove whitespace between tags, keep inside text nodes
+    xml = xml.replace(/>\s+</g, '><');
+    xml = xml.trim();
+
+    return xml;
+}
+
 function sortObjectAlphabetically(obj) {
+    if (typeof obj === 'string') {
+        if (obj.trim().startsWith('<')) {
+            return canonicalizeXml(obj);
+        }
+        return obj;
+    }
     if (typeof obj !== 'object' || obj === null) {
         return obj;
     }
@@ -22,6 +59,27 @@ function sortObjectAlphabetically(obj) {
     const sortedObj = {};
     for (const key of sortedKeys) {
         sortedObj[key] = sortObjectAlphabetically(obj[key]);
+    }
+    return sortedObj;
+}
+
+function sortObjectAlphabeticallyNew(obj) {
+    if (typeof obj === 'string') {
+        if (obj.trim().startsWith('<')) {
+            return canonicalizeXml(obj);
+        }
+        return obj;
+    }
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(sortObjectAlphabeticallyNew);
+    }
+    const sortedKeys = Object.keys(obj).sort();
+    const sortedObj = {};
+    for (const key of sortedKeys) {
+        sortedObj[key] = sortObjectAlphabeticallyNew(obj[key]);
     }
     return sortedObj;
 }
@@ -48,4 +106,8 @@ function getRequestBody(project,method){
 const generateRandomHex = length =>
     Array.from({ length }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
 
-module.exports = {sortObjectAlphabetically,getRequestBody,findAttribute,generateRandomHex}
+function serializeRequestBody(requestBody) {
+    return typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody);
+}
+
+module.exports = {sortObjectAlphabetically,sortObjectAlphabeticallyNew,getRequestBody,findAttribute,generateRandomHex,serializeRequestBody,canonicalizeXml}
