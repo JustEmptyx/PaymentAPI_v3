@@ -27,14 +27,16 @@ Node.js-приложение для тестирования и интеграц
 ## Установка
 
 ```bash
-# Клонирование репозитория
+Клонирование репозитория
 git clone <url-репозитория>
 cd PaymentAPI_v3
 
-# Установка зависимостей корневого проекта
+Установка зависимостей корневого проекта
+
 npm install
 
-# Установка зависимостей веб-интерфейса
+Установка зависимостей веб-интерфейса
+
 cd web-interface
 npm install
 cd ..
@@ -125,7 +127,3 @@ npm run build # node server.js
 npm start    # node server.js
 npm run dev  # nodemon server.js
 ```
-
-## Лицензия
-
-ISC
