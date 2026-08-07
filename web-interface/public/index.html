@@ -28,6 +28,9 @@
                     <div class="menu-item" data-tab="readme">
                         <i class="icon">📖</i> ReadME
                     </div>
+                    <div class="menu-item" data-tab="utils">
+                        <i class="icon">🛠️</i> Utils
+                    </div>
                 </div>
                 <div class="menu-section function-list-container" id="function-list-container">
                     <div class="menu-header">Available Functions</div>
@@ -370,6 +373,109 @@
                 </div>
             </div>
 
+            <!-- Utils Tab -->
+            <div id="utils-tab" class="tab-content">
+                <div class="utils-container">
+                    <h2>Utils</h2>
+                    <div class="utils-buttons">
+                        <div class="utils-btn-wrapper">
+                            <button id="utils-generate-aisp" class="btn primary utils-btn">
+                                Generate AISP request
+                            </button>
+                            <span class="utils-tooltip">Создание объекта request для авторизации по потоку AISPauthorizationCode</span>
+                        </div>
+                        <div class="utils-btn-wrapper">
+                            <button id="utils-generate-pisp" class="btn primary utils-btn">
+                                Generate PISP request
+                            </button>
+                            <span class="utils-tooltip">Создание объекта request для авторизации по потоку PISPauthorizationCode</span>
+                        </div>
+                        <div class="utils-btn-wrapper">
+                            <button id="utils-base64-converter" class="btn primary utils-btn">
+                                Base64 Converter
+                            </button>
+                            <span class="utils-tooltip">Конвертация между base64 и base64url</span>
+                        </div>
+                    </div>
+
+                    <!-- Generate AISP request Panel -->
+                    <div id="aisp-panel" class="utils-panel" style="display: none;">
+                        <div class="utils-form">
+                            <div class="form-group">
+                                <label for="aisp-client-id">client_id</label>
+                                <input type="text" id="aisp-client-id" class="form-input" placeholder="Enter client_id">
+                            </div>
+                            <div class="form-group">
+                                <label for="aisp-client-secret">client_secret</label>
+                                <input type="text" id="aisp-client-secret" class="form-input" placeholder="Enter client_secret">
+                            </div>
+                            <div class="form-group">
+                                <label for="aisp-consent-id">consent_id</label>
+                                <input type="text" id="aisp-consent-id" class="form-input" placeholder="Enter consent_id">
+                            </div>
+                            <button id="aisp-generate-btn" class="btn primary">Сгенерировать</button>
+                        </div>
+                        <div class="utils-result" id="aisp-result-container" style="display: none;">
+                            <div class="section-header">
+                                <span>Result</span>
+                            </div>
+                            <pre id="aisp-result" class="utils-result-content"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Generate PISP request Panel -->
+                    <div id="pisp-panel" class="utils-panel" style="display: none;">
+                        <div class="utils-form">
+                            <div class="form-group">
+                                <label for="pisp-client-id">client_id</label>
+                                <input type="text" id="pisp-client-id" class="form-input" placeholder="Enter client_id">
+                            </div>
+                            <div class="form-group">
+                                <label for="pisp-client-secret">client_secret</label>
+                                <input type="text" id="pisp-client-secret" class="form-input" placeholder="Enter client_secret">
+                            </div>
+                            <div class="form-group">
+                                <label for="pisp-consent-id">consent_id</label>
+                                <input type="text" id="pisp-consent-id" class="form-input" placeholder="Enter consent_id">
+                            </div>
+                            <button id="pisp-generate-btn" class="btn primary">Сгенерировать</button>
+                        </div>
+                        <div class="utils-result" id="pisp-result-container" style="display: none;">
+                            <div class="section-header">
+                                <span>Result</span>
+                            </div>
+                            <pre id="pisp-result" class="utils-result-content"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Base64 Converter Panel -->
+                    <div id="base64-panel" class="utils-panel" style="display: none;">
+                        <div class="utils-form">
+                            <div class="form-group">
+                                <label for="base64-operation">Operation</label>
+                                <select id="base64-operation" class="form-select">
+                                    <option value="toBase64">Any string → Base64</option>
+                                    <option value="toBase64Url">Any string → Base64url</option>
+                                    <option value="base64ToBase64Url">Base64 → Base64url</option>
+                                    <option value="base64UrlToBase64">Base64url → Base64</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="base64-input">Input</label>
+                                <textarea id="base64-input" class="form-input" rows="6" placeholder="Enter value here..."></textarea>
+                            </div>
+                            <button id="base64-convert-btn" class="btn primary">Convert</button>
+                        </div>
+                        <div class="utils-result" id="base64-result-container" style="display: none;">
+                            <div class="section-header">
+                                <span>Result</span>
+                            </div>
+                            <pre id="base64-result" class="utils-result-content"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ReadME Tab -->
             <div id="readme-tab" class="tab-content">
                 <div class="readme-container">
@@ -703,6 +809,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/display/placeholder.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
     <script src="js/app.js"></script>
 </body>
