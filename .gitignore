@@ -4,3 +4,7 @@ web-interface/node_modules
 logs.txt
 web-interface/logs.txt
 *.tar
+schemaModifier
+.idea/
+* copy.js
+project_analysis.md
