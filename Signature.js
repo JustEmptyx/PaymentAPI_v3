@@ -71,7 +71,7 @@ async function generateSignatureAccounts(config,methodType,methodUri,commonHeade
 
 async function generateHeader(config, commonHeaders){
   const baseUrl = config.baseUrl || "http://openbanking.asb.by";
-  let headerRaw = {"alg": "BIGNS128",
+  let headerRaw = {"alg": config.alg || "BIGNS128",
   "crit": [
     baseUrl + "/asn1",
     baseUrl + "/crptPrvdr",
