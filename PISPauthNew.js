@@ -406,7 +406,6 @@ async function makePATCHrequest(config,projectName,projectUrl,requestBody,enable
         commonHeaders = {
             "content-type": "application/xml;charset=utf-8",
             "accept": "application/xml;charset=utf-8",
-            "x-jws-signature": "",
         }
     } else {
         let cryptoHashBody
@@ -451,13 +450,7 @@ async function makePATCHrequest(config,projectName,projectUrl,requestBody,enable
         commonHeaders["authorization"] = "Bearer " + config["access_token"]
     }
     await appendToDefinedFile("logs.txt","commonHeaders",JSON.stringify(commonHeaders))
-    if (enabledHeaders.includes("NoSignature")){
-        let signature = await si.generateSignatureAccounts(config,"PATCH",projectUrl,commonHeaders,projectName,requestBodyName)
-        await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
-        commonHeaders['x-jws-signature'] = signature
-        console.log(JSON.stringify(signature))
-    }
-    else{
+    if (!enabledHeaders.includes("NoSignature")){
         let signature = await si.generateSignature(config,"PATCH",projectUrl,commonHeaders,projectName,requestBodyName)
         await appendToDefinedFile("logs.txt","signature",JSON.stringify(signature))
         commonHeaders['x-jws-signature'] = signature
@@ -1369,15 +1362,15 @@ async function postPaymentIntent(config,body,enabledHeaders){
     return postPaymentIntentResponse
 }
 
-async function putPaymentIntent(config,body,enabledHeaders){
+async function patchPaymentIntent(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
-    enabledHeaders.push("NoSignature")
     console.log(enabledHeaders)
-    let putPaymentIntentResponse = await makePUTrequest(config, "pispAuth","/paymentIntents",body,enabledHeaders)
-    console.log(JSON.stringify(putPaymentIntentResponse))
-    await appendToDefinedFile("logs.txt","putPaymentIntent_response",JSON.stringify(putPaymentIntentResponse))
-    return putPaymentIntentResponse
+    enabledHeaders.push("NoSignature")
+    let patchPaymentIntentResponse = await makePATCHrequest(config, "pispAuth","/paymentIntents",body,enabledHeaders)
+    console.log(JSON.stringify(patchPaymentIntentResponse))
+    await appendToDefinedFile("logs.txt","patchPaymentIntent_response",JSON.stringify(patchPaymentIntentResponse))
+    return patchPaymentIntentResponse
 }
 
 async function postAccountIntent(config,body,enabledHeaders){
@@ -1390,14 +1383,15 @@ async function postAccountIntent(config,body,enabledHeaders){
     return postAccountIntentResponse
 }
 
-async function putAccountIntent(config,body,enabledHeaders){
+async function patchAccountIntent(config,body,enabledHeaders){
     console.log(config)
     console.log(body)
+    enabledHeaders.push("NoSignature")
     console.log(enabledHeaders)
-    let putAccountIntentResponse = await makePUTrequest(config, "pispAuth","/accountIntents",body,enabledHeaders)
-    console.log(JSON.stringify(putAccountIntentResponse))
-    await appendToDefinedFile("logs.txt","putAccountIntent_response",JSON.stringify(putAccountIntentResponse))
-    return putAccountIntentResponse
+    let patchAccountIntentResponse = await makePATCHrequest(config, "pispAuth","/accountIntents",body,enabledHeaders)
+    console.log(JSON.stringify(patchAccountIntentResponse))
+    await appendToDefinedFile("logs.txt","patchAccountIntent_response",JSON.stringify(patchAccountIntentResponse))
+    return patchAccountIntentResponse
 }
 
 async function postAccountConsents(config,body,enabledHeaders){
@@ -1711,7 +1705,7 @@ async function generatePISPrequestObject(config, client_id, client_secret, conse
 
 module.exports = {defaultConfig,
     createTokenQPISP,createTokenTPE,createTokenPISP,createDboClientToken,
-    postPaymentIntent,putPaymentIntent,
+    postPaymentIntent,patchPaymentIntent,
     abstractGETrequest, abstractDELETErequest,
     postDomesticConsent,patchDomesticConsent,postDomesticPayment,putDomesticConsentExternalRepresentation,
     postDomesticTaxConsent,patchDomesticTaxConsent,postDomesticTaxPayment,putDomesticTaxConsentExternalRepresentation,
@@ -1720,7 +1714,7 @@ module.exports = {defaultConfig,
     postRequirementConsent,patchRequirementConsent,postRequirementPayment,putRequirementConsentExternalRepresentation,
     postTaxRequirementConsent,patchTaxRequirementConsent,postTaxRequirementPayment,putTaxRequirementConsentExternalRepresentation,
     postVRPConsent,patchVRPConsent,postVRPPayment,putVRPConsentExternalRepresentation,
-    postAccountIntent,putAccountIntent,prepareExternalRepresentationBodyAccounts,
+    postAccountIntent,patchAccountIntent,prepareExternalRepresentationBodyAccounts,
     postAccountConsents, patchAccountConsents,prepareAccountsAuthorisationBody,prepareExternalRepresentationSpecialPartBodyEDS,prepareAccountsEDSAuthorisationBody,
     postStatements, postTransactions,
     makePOSTrequest,

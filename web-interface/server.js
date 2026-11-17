@@ -81,13 +81,13 @@ const functionGroups = {
         "paymentIntents": [
             "POST /paymentIntents",
             "GET /paymentIntents/{personalAccountUser}",
-            "PUT /paymentIntents",
+            "PATCH /paymentIntents",
             "DELETE /paymentIntents/{personalAccountUser}",
         ],
         "accountIntents": [
             "POST /accountIntents",
             "GET /accountIntents/{personalAccountUser}",
-            "PUT /accountIntents",
+            "PATCH /accountIntents",
             "DELETE /accountIntents/{personalAccountUser}",
         ]
     },
@@ -332,7 +332,7 @@ const functionMappings = {
 
     "POST /paymentIntents":'postPaymentIntent',
     "GET /paymentIntents/{personalAccountUser}":'abstractGETrequest',
-    "PUT /paymentIntents":'putPaymentIntent',
+    "PATCH /paymentIntents":'patchPaymentIntent',
     "DELETE /paymentIntents/{personalAccountUser}":'abstractDELETErequest',
 
     // Accounts - with NoSignature header
@@ -348,7 +348,7 @@ const functionMappings = {
     // Account Intents - with NoSignature header
     "POST /accountIntents":'postAccountIntent',
     "GET /accountIntents/{personalAccountUser}":'abstractGETrequest',
-    "PUT /accountIntents":'putAccountIntent',
+    "PATCH /accountIntents":'patchAccountIntent',
     "DELETE /accountIntents/{personalAccountUser}":'abstractDELETErequest',
 
     // Account Consents - with NoSignature header
@@ -380,7 +380,7 @@ const noSignatureFunctions = [
     // Account Intents
     'POST /accountIntents',
     'GET /accountIntents/{personalAccountUser}',
-    'PUT /accountIntents',
+    'PATCH /accountIntents',
     'DELETE /accountIntents/{personalAccountUser}',
     
     // Account Consents
@@ -392,7 +392,13 @@ const noSignatureFunctions = [
     'DELETE /accountConsents/{accountConsentId}/PSUorPAU/{userId}',
     'GET /accountConsentsList/PSUorPAU/{userId}',
     'PUT /accountConsents/createExternalRepresentation',
-    'PUT /accountConsents/createSpecialPartExternalRepresentation'
+    'PUT /accountConsents/createSpecialPartExternalRepresentation',
+
+    //payment intents
+    'PATCH /paymentIntents',
+    'DELETE /paymentIntents/{personalAccountUser}',
+    'GET /paymentIntents/{personalAccountUser}'
+
 ];
 
 

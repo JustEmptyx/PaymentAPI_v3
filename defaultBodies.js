@@ -112,12 +112,12 @@ const defaultBodies = {
     "GET /payments/PSUorPAU/{userId}": "/payments/PSUorPAU/V087_TEST1",
     // Account Intents
     "POST /accountIntents": {"data":{"personalAccessUser":"V087_TEST1"}},
-    "PUT /accountIntents": {"data":{"personalAccessUser":"V087_TEST1"}},
+    "PATCH /accountIntents": {"data":{"personalAccessUser":"V087_TEST1"}},
     "GET /accountIntents/{personalAccountUser}":"/accountIntents/V087_TEST1",
     "DELETE /accountIntents/{personalAccountUser}":"/accountIntents/V087_TEST1",
 
     "POST /paymentIntents": {"data":{"personalAccessUser":"V087_TEST1"}},
-    "PUT /paymentIntents": {"data":{"personalAccessUser":"V087_TEST1"}},
+    "PATCH /paymentIntents": {"data":{"personalAccessUser":"V087_TEST1"}},
     "GET /paymentIntents/{personalAccountUser}":"/paymentIntents/V087_TEST1",
     "DELETE /paymentIntents/{personalAccountUser}":"/paymentIntents/V087_TEST1",
 
