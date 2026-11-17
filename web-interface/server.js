@@ -1020,6 +1020,8 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             const prepBodyResult = results.find(r => r.name === 'prepareExternalRepresentationBody');
             // Get the result from step 6 (put*ConsentExternalRepresentation)
             const putExtRepResult = results.find(r => r.name.endsWith('ConsentExternalRepresentation') && r.name.startsWith('put'));
+            // Get the original POST consent result to preserve risk for HMAC
+            const createConsentResult = results.find(r => r.name.includes('Consent') && !r.name.includes('patch') && !r.name.includes('put'));
             let baseBody = {};
             if (prepBodyResult && prepBodyResult.data) {
                 baseBody = JSON.parse(JSON.stringify(prepBodyResult.data));
@@ -1032,6 +1034,11 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
                     baseBody.data = baseBody.data || {};
                     baseBody.data.externalRepresentation = putData.externalRepresentation;
                 }
+            }
+
+            // Add original risk so HMAC covers it for domestic/requirement/VRP
+            if (createConsentResult && createConsentResult.data && createConsentResult.data.risk) {
+                baseBody.risk = createConsentResult.data.risk;
             }
             
             // Call user-defined function to prepare special part body
@@ -1079,8 +1086,11 @@ async function executeSpecialFunction(funcName, config, requestBody, results, pa
             const body2 = (putExtRepResult && putExtRepResult.data) ? putExtRepResult.data : {};
             const body3 = (prepSpecialPartResult && prepSpecialPartResult.data) ? prepSpecialPartResult.data : {};
             const body4 = (putSpecialPartResult && putSpecialPartResult.data) ? putSpecialPartResult.data : {};
+            const originalRisk = (createConsentResult && createConsentResult.data && createConsentResult.data.risk)
+                ? createConsentResult.data.risk
+                : undefined;
             
-            const userResult = await PISPauth.prepareAuthorisationBody(body1, body2, body3, body4, paymentType);
+            const userResult = await PISPauth.prepareAuthorisationBody(body1, body2, body3, body4, paymentType, originalRisk);
             return { success: true, data: userResult, statusCode: null };
         }
         

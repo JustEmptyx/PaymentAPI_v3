@@ -7,7 +7,7 @@ const readline = require("readline-sync");
 const axios = require("axios");
 const {requestBody,setRequestBody} =  require('./requestBodies.js')
 const {appendToDefinedFile,createFile} = require('./fileManager')
-const {sortObjectAlphabetically,getRequestBody,findAttribute,generateRandomHex,serializeRequestBody} = require('./utils')
+const {sortObjectAlphabetically,sortObjectAlphabeticallyNew,getRequestBody,findAttribute,generateRandomHex,serializeRequestBody} = require('./utils')
 const {scCryptoSign,scCryptoHash} = require('./cryptoManager')
 const{convertToBase64, convertToBase64URL, convertBase64UrlToBase64, convertBase64ToBase64Url, decodeBase64, decodeBase64Url} = require('./base64converter')
 const fs = require("fs");
@@ -398,7 +398,7 @@ async function makeGETrequest(config,projectName,projectUrl,requestBody,enabledH
 async function makePATCHrequest(config,projectName,projectUrl,requestBody,enabledHeaders = []){
     let requestBodyName = "PATCHbody"
     await appendToDefinedFile("logs.txt","received requestBody",JSON.stringify(requestBody))
-    setRequestBody(projectName,requestBodyName,sortObjectAlphabetically(requestBody))
+    setRequestBody(projectName,requestBodyName,sortObjectAlphabeticallyNew(requestBody))
     requestBody = getRequestBody(projectName, requestBodyName)
     await appendToDefinedFile("logs.txt","formatted requestBody",JSON.stringify(requestBody))
     let commonHeaders = {}
@@ -722,6 +722,19 @@ function renameKeyInObject(obj, oldKey, newKey) {
   return updatedObj;
 }
 
+function stripGetEnvelope(body) {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return body;
+  }
+  delete body.links;
+  delete body.meta;
+  delete body.risk;
+  if (body.data && typeof body.data === 'object' && !Array.isArray(body.data)) {
+    delete body.data.link;
+  }
+  return body;
+}
+
 // async function createSpecialPartObject(config,imitIns,requestBodyWithExternalRepresentation){
 //   const currentDate = new Date();
 //   const formattedDate = formatInTimeZone(currentDate, 'Europe/Minsk', "yyyy-MM-dd'T'HH:mm:ssXXX");
@@ -870,8 +883,16 @@ async function createMACkey(config){
 }
 
 async function createImitationInsert(config,requestBodyWithExternalRepresentation){
-
-  let buff = new Buffer(JSON.stringify(requestBodyWithExternalRepresentation));
+  const hmacPayloadInput = {
+    data: requestBodyWithExternalRepresentation.data
+  };
+  // NBRB schemas require "risk" for domestic/requirement/VRP PATCH,
+  // so it must be included in the HMAC calculation.
+  if (requestBodyWithExternalRepresentation.risk) {
+    hmacPayloadInput.risk = requestBodyWithExternalRepresentation.risk;
+  }
+  const hmacPayload = sortObjectAlphabeticallyNew(hmacPayloadInput);
+  let buff = Buffer.from(JSON.stringify(hmacPayload));
   let extendedBodyHash = buff.toString('base64');
 
   await appendToDefinedFile("logs.txt","requestBodyWithExternalRepresentation_base64_step1ImitIns",extendedBodyHash)
@@ -1467,7 +1488,7 @@ async function postTransactions(config, body, enabledHeaders) {
 }
 
 async function prepareExternalRepresentationBody(body,type){
-    let returnBody = body
+    let returnBody = stripGetEnvelope(body)
     if(type == "domestic"){
         delete returnBody.data.account
     }
@@ -1515,14 +1536,14 @@ async function prepareExternalRepresentationBody(body,type){
         delete returnBody.data.charge
         returnBody = renameKeyInObject(returnBody,"paymentConsentId","VRPConsentId")
     }
-    let sortedAccList = sortObjectAlphabetically(returnBody)
+    let sortedAccList = sortObjectAlphabeticallyNew(returnBody)
     returnBody = sortedAccList
     return returnBody
 }
 
 async function prepareExternalRepresentationBodyAccounts(body,type){
-    let returnBody = body
-    let sortedAccList = sortObjectAlphabetically(returnBody)
+    let returnBody = stripGetEnvelope(body)
+    let sortedAccList = sortObjectAlphabeticallyNew(returnBody)
     returnBody = sortedAccList
     return returnBody
 }
@@ -1531,7 +1552,7 @@ async function prepareExternalRepresentationSpecialPartBody(config,requestBodyWi
     if(requestBodyWithExternalRepresentation.data.paymentConsentId){
         requestBodyWithExternalRepresentation = renameKeyInObject(requestBodyWithExternalRepresentation,"paymentConsentId","domesticConsentId")
     }
-    requestBodyWithExternalRepresentation = sortObjectAlphabetically(requestBodyWithExternalRepresentation)
+    requestBodyWithExternalRepresentation = sortObjectAlphabeticallyNew(requestBodyWithExternalRepresentation)
     debugger;
     let imitIns = await createImitationInsert(config,requestBodyWithExternalRepresentation)
       await appendToDefinedFile("logs.txt","imitIns_step4ImitIns",imitIns)
@@ -1542,7 +1563,7 @@ async function prepareExternalRepresentationSpecialPartBody(config,requestBodyWi
 }
 
 async function prepareExternalRepresentationSpecialPartBodyEDS(config,requestBodyWithExternalRepresentation){
-    requestBodyWithExternalRepresentation = sortObjectAlphabetically(requestBodyWithExternalRepresentation)
+    requestBodyWithExternalRepresentation = sortObjectAlphabeticallyNew(requestBodyWithExternalRepresentation)
     debugger;
     let clientSignatures = await generateClientSignatures(config,requestBodyWithExternalRepresentation)
     let specPartObject = await createSpecialPartObjectEDS(config,clientSignatures,requestBodyWithExternalRepresentation)
@@ -1600,11 +1621,12 @@ async function preparePaymentsBody(type, reqConsent, resConsent){
     return returnBody
 }
 
-async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extReprSpecPart,type){
+async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extReprSpecPart,type,originalConsentRisk){
     console.log("extRepr_fromprep\n"+JSON.stringify(extRepr))
     console.log("specPart_fromprep\n"+JSON.stringify(specPart))
     console.log("extReprSpecPart\n"+JSON.stringify(extReprSpecPart))
     console.log("preparedAccList\n" + JSON.stringify(preparedAccList))
+    preparedAccList = stripGetEnvelope(preparedAccList)
     if(preparedAccList.data.paymentConsentId){
         preparedAccList = renameKeyInObject(preparedAccList,"paymentConsentId","domesticConsentId")
     }
@@ -1616,8 +1638,14 @@ async function prepareAuthorisationBody(preparedAccList,extRepr,specPart,extRepr
     console.log("authorisationBodyWithSpecPart\n"+JSON.stringify(authorisationBody))
     authorisationBody.specialPart.externalRepresentationSpecialPart = extReprSpecPart.data.externalRepresentationSpecialPart
     console.log("authorisationBodyWithSpecPartExtRepr\n"+JSON.stringify(authorisationBody))
-    
-    authorisationBody = sortObjectAlphabetically(authorisationBody)
+
+    // NBRB schemas require top-level "risk" for domestic, requirement and VRP consents
+    const typesRequiringRisk = ['domestic', 'requirement', 'VRP'];
+    if (typesRequiringRisk.includes(type) && originalConsentRisk) {
+        authorisationBody.risk = originalConsentRisk;
+    }
+
+    authorisationBody = sortObjectAlphabeticallyNew(authorisationBody)
     return authorisationBody
 }
 
@@ -1626,6 +1654,7 @@ async function prepareAccountsAuthorisationBody(preparedAccList,extRepr,specPart
     console.log("specPart_fromprep\n"+JSON.stringify(specPart))
     console.log("extReprSpecPart\n"+JSON.stringify(extReprSpecPart))
     console.log("preparedAccList\n" + JSON.stringify(preparedAccList))
+    preparedAccList = stripGetEnvelope(preparedAccList)
     let authorisationBody = preparedAccList
     console.log("authorisationBody\n"+JSON.stringify(authorisationBody))
     authorisationBody.data.externalRepresentation = extRepr.data.externalRepresentation
@@ -1635,7 +1664,7 @@ async function prepareAccountsAuthorisationBody(preparedAccList,extRepr,specPart
     authorisationBody.specialPart.externalRepresentationSpecialPart = extReprSpecPart.data.externalRepresentationSpecialPart
     console.log("authorisationBodyWithSpecPartExtRepr\n"+JSON.stringify(authorisationBody))
     
-    authorisationBody = sortObjectAlphabetically(authorisationBody)
+    authorisationBody = sortObjectAlphabeticallyNew(authorisationBody)
     return authorisationBody
 }
 
@@ -1651,6 +1680,7 @@ async function prepareAccountsEDSAuthorisationBody(config, preparedAccList,extRe
     console.log("specPart_fromprep\n"+JSON.stringify(specPart))
     console.log("extReprSpecPart\n"+JSON.stringify(extReprSpecPart))
     console.log("preparedAccList\n" + JSON.stringify(preparedAccList))
+    preparedAccList = stripGetEnvelope(preparedAccList)
     let authorisationBody = preparedAccList
     console.log("authorisationBody\n"+JSON.stringify(authorisationBody))
     authorisationBody.data.externalRepresentation = extRepr.data.externalRepresentation
@@ -1665,7 +1695,7 @@ async function prepareAccountsEDSAuthorisationBody(config, preparedAccList,extRe
         }
     console.log("authorisationBodyWithSpecPartExtRepr\n"+JSON.stringify(authorisationBody))
     
-    authorisationBody = sortObjectAlphabetically(authorisationBody)
+    authorisationBody = sortObjectAlphabeticallyNew(authorisationBody)
     return authorisationBody
 }
 
