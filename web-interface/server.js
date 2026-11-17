@@ -1750,6 +1750,35 @@ app.post('/api/utils/generatePISP', async (req, res) => {
     }
 });
 
+app.post('/api/utils/generateHmac', async (req, res) => {
+    try {
+        if (!req.session.config) {
+            req.session.config = { ...PISPauth.defaultConfig };
+        }
+        const { data, otp } = req.body;
+        if (data === undefined || data === null || data === '') {
+            return res.status(400).json({
+                success: false,
+                error: 'data is required'
+            });
+        }
+        if (!otp) {
+            return res.status(400).json({
+                success: false,
+                error: 'OTP is required'
+            });
+        }
+        const result = await PISPauth.generateHmacFromConsentData(req.session.config, data, otp);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error('Error generating HMAC:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Unknown error occurred'
+        });
+    }
+});
+
 app.post('/api/utils/base64', (req, res) => {
     try {
         const { operation, value } = req.body;

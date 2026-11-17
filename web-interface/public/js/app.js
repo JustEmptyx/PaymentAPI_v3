@@ -1536,6 +1536,69 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // Generate HMAC
+        const generateHmacBtn = document.getElementById('utils-generate-hmac');
+        const hmacPanel = document.getElementById('hmac-panel');
+        const hmacGenerateBtn = document.getElementById('hmac-generate-btn');
+
+        if (generateHmacBtn && hmacPanel) {
+            generateHmacBtn.addEventListener('click', () => {
+                switchUtilsPanel(hmacPanel);
+            });
+        }
+
+        if (hmacGenerateBtn) {
+            hmacGenerateBtn.addEventListener('click', async () => {
+                const dataRaw = document.getElementById('hmac-data').value.trim();
+                const otp = document.getElementById('hmac-otp').value.trim();
+                const resultContainer = document.getElementById('hmac-result-container');
+                const resultPre = document.getElementById('hmac-result');
+
+                if (!dataRaw || !otp) {
+                    showNotification('Please fill in data and OTP', 'error');
+                    return;
+                }
+
+                let data;
+                try {
+                    data = JSON.parse(dataRaw);
+                } catch (e) {
+                    showNotification('data must be valid JSON', 'error');
+                    return;
+                }
+
+                try {
+                    hmacGenerateBtn.disabled = true;
+                    hmacGenerateBtn.textContent = 'Generating...';
+
+                    const response = await fetch('/api/utils/generateHmac', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ data, otp }),
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        resultPre.textContent = result.data;
+                        resultContainer.style.display = 'block';
+                        showNotification('HMAC generated successfully');
+                    } else {
+                        showNotification(result.error || 'Generation failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error generating HMAC:', error);
+                    showNotification(`Error: ${error.message}`, 'error');
+                } finally {
+                    hmacGenerateBtn.disabled = false;
+                    hmacGenerateBtn.textContent = 'Сгенерировать';
+                }
+            });
+        }
+
         // Base64 Converter
         const base64ConverterBtn = document.getElementById('utils-base64-converter');
         const base64Panel = document.getElementById('base64-panel');

@@ -928,6 +928,41 @@ async function createImitationInsert(config,requestBodyWithExternalRepresentatio
   return response.json();
 }
 
+async function generateHmacFromConsentData(config, consentData, otp) {
+  if (!otp) {
+    throw new Error('OTP is required');
+  }
+  let parsed = consentData;
+  if (typeof consentData === 'string') {
+    parsed = JSON.parse(consentData);
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('data must be a JSON object');
+  }
+  // Ожидаемый формат ввода: {"data":{...},"risk":{...}} или {"data":{...}}.
+  // Формируем тело так же, как sequence перед createImitationInsert:
+  // data (с обязательным externalRepresentation) и risk, если он передан.
+  if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) {
+    throw new Error('body must contain a "data" object');
+  }
+  if (!parsed.data.externalRepresentation) {
+    throw new Error('data.externalRepresentation is required');
+  }
+  const body = { data: JSON.parse(JSON.stringify(parsed.data)) };
+  if (parsed.risk && typeof parsed.risk === 'object' && !Array.isArray(parsed.risk)) {
+    body.risk = JSON.parse(JSON.stringify(parsed.risk));
+  }
+  // Сортировка ключей как в sequence (prepareExternalRepresentationSpecialPartBody)
+  const sortedBody = sortObjectAlphabeticallyNew(body);
+  const hmacConfig = { ...config, client_otp: otp };
+  const result = await createImitationInsert(hmacConfig, sortedBody);
+  if (!result || result.ResultB64 == null) {
+    const msg = (result && (result.ErrorMessage || result.error || result.ErrorCode)) || 'SCCrypto did not return HMAC';
+    throw new Error(String(msg));
+  }
+  return result.ResultB64;
+}
+
 async function createExternalRepresentation(config, requestBody){
     await appendToDefinedFile("logs.txt","EXTERNAL REPRESENTATION","")
     let token = await createDboClientToken(config)
@@ -1749,5 +1784,5 @@ module.exports = {defaultConfig,
     postStatements, postTransactions,
     makePOSTrequest,
 prepareExternalRepresentationBody,prepareExternalRepresentationSpecialPartBody,putConsentSpecialPartExternalRepresentation,putAccountConsentsSpecialPartExternalRepresentation,putAccountConsentsExternalRepresentation,prepareAuthorisationBody,preparePaymentsBody,
-    getRequestBody,scCryptoHash,generateHeader,scCryptoSign,createImitationInsert,createSpecialPartObject,createExternalRepresentationSpecialPart,renameKeyInObject,createExternalRepresentation,generateRandomHex,getAccListPaymentsKEYCLOAKcheck,getAccListPaymentsKEYCLOAK,
+    getRequestBody,scCryptoHash,generateHeader,scCryptoSign,createImitationInsert,generateHmacFromConsentData,createSpecialPartObject,createExternalRepresentationSpecialPart,renameKeyInObject,createExternalRepresentation,generateRandomHex,getAccListPaymentsKEYCLOAKcheck,getAccListPaymentsKEYCLOAK,
     generateAISPrequestObject,generatePISPrequestObject}

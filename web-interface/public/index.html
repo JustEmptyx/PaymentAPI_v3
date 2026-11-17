@@ -396,6 +396,12 @@
                             </button>
                             <span class="utils-tooltip">Конвертация между base64 и base64url</span>
                         </div>
+                        <div class="utils-btn-wrapper">
+                            <button id="utils-generate-hmac" class="btn primary utils-btn">
+                                Generate HMAC
+                            </button>
+                            <span class="utils-tooltip">Генерация HMAC (имитовставки) по data согласия и OTP</span>
+                        </div>
                     </div>
 
                     <!-- Generate AISP request Panel -->
@@ -445,6 +451,27 @@
                                 <span>Result</span>
                             </div>
                             <pre id="pisp-result" class="utils-result-content"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Generate HMAC Panel -->
+                    <div id="hmac-panel" class="utils-panel hmac-panel" style="display: none;">
+                        <div class="utils-form">
+                            <div class="form-group">
+                                <label for="hmac-data">data</label>
+                                <textarea id="hmac-data" class="form-input" rows="12" placeholder='Общая часть согласия: объект data или {"data":{...}}'></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="hmac-otp">OTP</label>
+                                <input type="text" id="hmac-otp" class="form-input" placeholder="Enter OTP">
+                            </div>
+                            <button id="hmac-generate-btn" class="btn primary">Сгенерировать</button>
+                        </div>
+                        <div class="utils-result" id="hmac-result-container" style="display: none;">
+                            <div class="section-header">
+                                <span>HMAC</span>
+                            </div>
+                            <pre id="hmac-result" class="utils-result-content"></pre>
                         </div>
                     </div>
 
